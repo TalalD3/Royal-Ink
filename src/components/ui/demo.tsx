@@ -29,7 +29,7 @@ const slides: SqueezeSlide[] = [
             "تشكيلة واسعة تشمل عبوات الأحبار، خراطيش الحبر والتونر، مساحيق التونر، وأشرطة التحبير.",
         action: "اكتشف المستلزمات",
         overlay: mark("أحبار وتونر"),
-        image: "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?q=80&w=2070&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?q=80&w=800&auto=format&fit=crop",
         imageAlt: "Colorful ink cartridges and printing supplies",
     },
     {
@@ -39,7 +39,7 @@ const slides: SqueezeSlide[] = [
             "نوفر طابعات، ماسحات ضوئية، وحواسيب مكتبية ومحمولة لتلبية متطلبات العمل المكتبي وإعداد الوثائق.",
         action: "تصفح الأجهزة",
         overlay: mark("طابعات ومعدات"),
-        image: "https://images.unsplash.com/photo-1598550476439-6847785fcea6?q=80&w=2070&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1598550476439-6847785fcea6?q=80&w=800&auto=format&fit=crop",
         imageAlt: "Modern office printer machine",
     },
     {
@@ -49,7 +49,7 @@ const slides: SqueezeSlide[] = [
             "نساعد عملاءنا على تحديد المستلزم المناسب لطابعاتهم، ونقدم توجيهاً عملياً بشأن التوافق والاستخدام.",
         action: "اتصل بالدعم",
         overlay: mark("دعم فني"),
-        image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=2069&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=800&auto=format&fit=crop",
         imageAlt: "Technical support team helping customers",
     },
     {
@@ -59,7 +59,7 @@ const slides: SqueezeSlide[] = [
             "تتوفر منتجات روايال إنك في أغلب ولايات الوطن عبر شبكة من الموزعين والوسطاء ونقاط البيع.",
         action: "ابحث عن موزع",
         overlay: mark("التوزيع"),
-        image: "https://images.unsplash.com/photo-1586528116311-ad8ed7c66a41?q=80&w=2070&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1586528116311-ad8ed7c66a41?q=80&w=800&auto=format&fit=crop",
         imageAlt: "Boxes prepared for shipping and distribution",
     },
     {
@@ -69,7 +69,7 @@ const slides: SqueezeSlide[] = [
             "نهتم بالجوانب البيئية المرتبطة بمستلزمات الطباعة. عبواتنا تتضمن العلامات المطبوعة ISO 14001 و RoHS.",
         action: "اقرأ المزيد",
         overlay: mark("البيئة"),
-        image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2013&auto=format&fit=crop",
+        image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=800&auto=format&fit=crop",
         imageAlt: "Eco-friendly green leaves growing",
     },
 ];

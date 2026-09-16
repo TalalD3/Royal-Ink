@@ -407,6 +407,8 @@ function Picture({ slide }: { slide: SqueezeSlide }) {
                 draggable={false}
                 className="absolute inset-y-0 left-1/2 h-full max-w-none -translate-x-1/2 object-cover"
                 style={box}
+                loading="lazy"
+                decoding="async"
             />
         );
     }

@@ -337,6 +337,7 @@ export default function Home() {
                   width={700}
                   height={500}
                   className="object-cover w-full h-[350px] md:h-[450px]"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
@@ -378,6 +379,8 @@ export default function Home() {
                   width={600}
                   height={450}
                   className="object-cover w-full h-[300px] md:h-[400px]"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-l from-black/20 to-transparent" />
                 <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
