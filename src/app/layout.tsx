@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Cairo } from "next/font/google";
+import { Tajawal } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { Droplet, Globe, Menu } from "lucide-react";
 
-const cairo = Cairo({ subsets: ["arabic", "latin"], weight: ["300", "400", "500", "600", "700", "800", "900"] });
+const tajawal = Tajawal({ subsets: ["arabic", "latin"], weight: ["300", "400", "500", "700", "800", "900"] });
 
 export const metadata: Metadata = {
   title: "Royal Ink - روايال إنك",
@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={cairo.className}>
+      <body className={tajawal.className}>
         <header className="sticky top-0 z-50 w-full bg-white shadow-sm">
           <div className="container mx-auto px-4 h-20 flex items-center justify-between">
             {/* Logo */}
