@@ -394,53 +394,83 @@ const mobileCards = [
 ];
 
 function MobileCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-  const onScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setActive(Math.min(Math.max(Math.round(el.scrollLeft / el.offsetWidth), 0), mobileCards.length - 1));
-  }, []);
-
   return (
-    <section className="py-12 bg-[#f5f0eb]" aria-label="مسيرة روايال إنك">
-      <div className="container mx-auto px-4 mb-8">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="h-px w-12 bg-[#2c2c2c]/15" />
-          <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#2c2c2c]/50">مسيرتنا</span>
-          <div className="h-px w-12 bg-[#2c2c2c]/15" />
+    <section className="py-24 bg-[#0a0a0a] text-white overflow-hidden relative" aria-label="مسيرة روايال إنك">
+      {/* Decorative noise/texture */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
+      
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="flex flex-col items-center justify-center mb-24 text-center">
+          <motion.div
+            initial={{ height: 0 }}
+            whileInView={{ height: 80 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1 }}
+            className="w-px bg-gradient-to-b from-transparent via-primary to-primary mb-8"
+          />
+          <h2 className="text-5xl font-black mb-4 tracking-tight">
+            المسيرة
+          </h2>
+          <p className="text-sm font-bold tracking-[0.3em] uppercase text-primary/80">
+            The Journey
+          </p>
         </div>
-        <h2 className="text-2xl font-extrabold text-center mb-2 text-[#2c2c2c]">محطات بارزة</h2>
-        <p className="text-sm text-[#2c2c2c]/50 text-center flex items-center justify-center gap-1">
-          <ArrowLeft className="w-3 h-3" /> اسحب لاستكشاف المسيرة <ArrowRight className="w-3 h-3" />
-        </p>
-      </div>
-      <div ref={scrollRef} onScroll={onScroll} className="flex overflow-x-auto snap-x snap-mandatory gap-4 px-4 pb-4" role="list" style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
-        {mobileCards.map((c, i) => (
-          <div key={c.year} className="snap-center flex-shrink-0 w-[85vw] max-w-sm" role="listitem">
-            <div className={`rounded-2xl overflow-hidden h-[420px] flex flex-col shadow-lg ${c.highlight ? "ring-2 ring-primary/30" : ""}`}>
-              <div className="relative h-56 flex-shrink-0">
-                <Image src={c.image} alt={c.title} fill className="object-cover" sizes="85vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#f5f0eb] via-black/10 to-transparent" />
-                <span className="absolute bottom-3 left-3 text-[#2c2c2c] text-xs font-bold bg-white/80 backdrop-blur-sm rounded-lg px-3 py-1">{c.year}</span>
-              </div>
-              <div className="p-5 flex flex-col flex-1 bg-[#f5f0eb]">
-                <h3 className="text-lg font-bold mb-2 text-[#2c2c2c]">{c.title}</h3>
-                <p className="text-sm text-[#2c2c2c]/60 leading-relaxed flex-1">{c.desc}</p>
-                <div className="flex items-center gap-1.5 mt-4 pt-4 border-t border-[#2c2c2c]/10">
-                  {mobileCards.map((_, j) => (
-                    <div key={j} className={`rounded-full transition-all duration-300 ${j === i ? "w-6 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-[#2c2c2c]/15"}`} />
-                  ))}
+
+        <div className="flex flex-col gap-32 relative pb-20">
+          {mobileCards.map((c, i) => {
+            const isEven = i % 2 === 0;
+            
+            return (
+              <motion.div 
+                key={c.year}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="relative"
+              >
+                {/* Massive Background Year (Outlined) */}
+                <div className={`absolute top-0 ${isEven ? "right-0" : "left-0"} -translate-y-16 opacity-[0.07] pointer-events-none select-none z-0`}>
+                  <span className="text-[140px] font-black leading-none text-transparent" style={{ WebkitTextStroke: "2px rgba(255,255,255,1)" }}>
+                    {c.year}
+                  </span>
                 </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-center gap-2 mt-4">
-        {mobileCards.map((_, i) => (
-          <div key={i} className={`rounded-full transition-all duration-300 ${i === active ? "w-8 h-2 bg-primary" : "w-2 h-2 bg-[#2c2c2c]/15"}`} />
-        ))}
+
+                <div className={`relative z-10 flex flex-col gap-6 ${isEven ? "items-start" : "items-end"}`}>
+                  
+                  {/* Image container with varied aspect ratios */}
+                  <div 
+                    className={`relative overflow-hidden shadow-2xl shadow-black/80 rounded-sm ${
+                      i === 0 ? "w-[85%] aspect-[4/5]" : 
+                      i === 1 ? "w-[75%] aspect-[3/4]" : 
+                      i === 2 ? "w-full aspect-square" : 
+                      i === 3 ? "w-[85%] aspect-[4/5]" : 
+                      "w-[95%] aspect-[3/4] ring-1 ring-primary/30"
+                    }`}
+                  >
+                    <Image src={c.image} alt={c.title} fill className="object-cover scale-105" sizes="90vw" />
+                    <div className="absolute inset-0 bg-black/30" />
+                    
+                    {/* Floating mini-year inside image on opposite side */}
+                    <div className={`absolute bottom-4 ${isEven ? "left-4" : "right-4"} bg-primary text-white text-xs font-bold px-3 py-1.5 rounded-sm`}>
+                      {c.year}
+                    </div>
+                  </div>
+
+                  {/* Text Block */}
+                  <div className={`max-w-[85%] bg-[#0a0a0a]/80 backdrop-blur-md p-6 rounded-2xl ${isEven ? "text-right -mt-20 mr-auto" : "text-right -mt-20 ml-auto"}`}>
+                    <h3 className="text-2xl font-black mb-3 text-white">
+                      {c.title}
+                    </h3>
+                    <p className="text-white/70 leading-relaxed text-sm">
+                      {c.desc}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
