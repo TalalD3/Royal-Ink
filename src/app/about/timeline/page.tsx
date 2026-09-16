@@ -80,7 +80,7 @@ const quotes: Quote[] = [
 /** Total track width as a multiplier of viewport width. */
 const TRACK_WIDTH_VW = 350;
 
-const yearLabels = ["2007", "2011", "2017", "2022"];
+const yearLabels = ["2007", "2011", "2012", "2017", "2022"];
 
 /* ══════════════════════════ MAIN PAGE ══════════════════════════ */
 
@@ -388,6 +388,7 @@ export default function TimelinePage() {
 const mobileCards = [
   { year: "2007", title: "البداية الأولى", desc: "بدأ أحد مؤسسينا مسيرته في الطباعة من ورشة منزلية صغيرة.", image: "/images/timeline-workshop.jpg" },
   { year: "2011", title: "تأسيس ورشة متخصصة", desc: "تطور المشروع إلى افتتاح ورشة متخصصة بتقنيات متعددة.", image: "/images/hero-office.jpg" },
+  { year: "2012", title: "استيراد المستلزمات", desc: "بدأت مرحلة استيراد مستلزمات الإعلام الآلي والطباعة.", image: "/images/ri.jpg" },
   { year: "2017", title: "وكالة اتصال وإشهار", desc: "تأسست وكالة اتصال وإشهار تقدم حلولاً إبداعية متكاملة.", image: "/images/ri1.jpg" },
   { year: "2022", title: "ميلاد تيتانو كلاس وروايال إنك", desc: "اجتمعت المسيرتان لتأسيس شركة تيتانو كلاس وعلامة روايال إنك.", image: "/images/ink-cartridges.jpg", highlight: true },
 ];

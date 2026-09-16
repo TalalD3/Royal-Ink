@@ -615,10 +615,11 @@ export default function Home() {
             {/* Connection line */}
             <div className="hidden md:block absolute top-[38px] right-0 left-0 h-[2px] bg-border/60 z-0" />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-4">
               {[
                 { year: "2007", title: "البداية الأولى", icon: <Printer className="w-4 h-4" />, desc: "ورشة طباعة منزلية صغيرة" },
                 { year: "2011", title: "ورشة متخصصة", icon: <Building2 className="w-4 h-4" />, desc: "تقنيات طباعة احترافية متعددة" },
+                { year: "2012", title: "استيراد المستلزمات", icon: <Truck className="w-4 h-4" />, desc: "استيراد مستلزمات الإعلام الآلي والطباعة" },
                 { year: "2017", title: "وكالة إشهار", icon: <Sparkles className="w-4 h-4" />, desc: "حلول إبداعية وطباعية متكاملة" },
                 { year: "2022", title: "روايال إنك", icon: <PackageCheck className="w-4 h-4" />, desc: "تأسيس العلامة والشركة" },
               ].map((item, i) => (
