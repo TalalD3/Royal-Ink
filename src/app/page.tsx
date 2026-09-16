@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import SqueezeCarouselDemo from "@/components/ui/demo";
+import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 
 /* ══════════════════════════════════════════════════════════════════════
    ANIMATED COUNTER — counts up when in view
@@ -237,11 +238,12 @@ export default function Home() {
         ref={heroRef}
         className="relative min-h-[90vh] flex items-center overflow-hidden"
       >
-        {/* Background pattern */}
-        <div className="absolute inset-0 bg-gradient-to-bl from-muted/40 via-background to-background" />
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "40px 40px" }} />
+        <BackgroundBeamsWithCollision className="min-h-[90vh] w-full">
+          {/* Background pattern */}
+          <div className="absolute inset-0 bg-gradient-to-bl from-muted/40 via-background to-background -z-10" />
+          <div className="absolute inset-0 opacity-[0.03] -z-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "40px 40px" }} />
 
-        <motion.div style={{ opacity: heroOpacity }} className="container relative z-10 mx-auto px-4 py-20 lg:py-0">
+          <motion.div style={{ opacity: heroOpacity }} className="container relative z-10 mx-auto px-4 py-20 lg:py-0">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mt-8 lg:mt-0">
             {/* Text side */}
             <div className="order-2 lg:order-1">
@@ -356,6 +358,7 @@ export default function Home() {
             </motion.div>
           </div>
         </motion.div>
+        </BackgroundBeamsWithCollision>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
