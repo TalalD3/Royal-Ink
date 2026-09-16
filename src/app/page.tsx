@@ -612,8 +612,8 @@ export default function Home() {
 
           {/* Horizontal mini-timeline */}
           <div className="max-w-5xl mx-auto relative">
-            {/* Connection line */}
-            <div className="hidden md:block absolute top-[38px] right-0 left-0 h-[2px] bg-border/60 z-0" />
+            {/* Connection line (dashed, starts/ends exactly at the center of the first/last items) */}
+            <div className="hidden md:block absolute top-[42px] right-[10%] left-[10%] border-t-2 border-dashed border-primary/30 z-0" />
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-4">
               {[
@@ -632,7 +632,7 @@ export default function Home() {
                   className="relative text-center group"
                 >
                   {/* Dot on timeline */}
-                  <div className="hidden md:flex w-10 h-10 mx-auto mb-4 rounded-full bg-background border-2 border-primary/40 items-center justify-center z-10 relative group-hover:bg-primary group-hover:border-primary group-hover:text-white text-primary transition-all duration-300">
+                  <div className="hidden md:flex w-12 h-12 mx-auto mb-5 rounded-full bg-background border-2 border-primary/20 shadow-sm items-center justify-center z-10 relative group-hover:bg-primary group-hover:border-primary group-hover:text-white group-hover:shadow-md group-hover:-translate-y-1 text-primary transition-all duration-300">
                     {item.icon}
                   </div>
                   <span className="inline-block text-xs font-bold text-primary bg-primary/10 rounded-full px-3 py-1 mb-2">
