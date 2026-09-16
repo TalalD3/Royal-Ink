@@ -241,8 +241,8 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-bl from-muted/40 via-background to-background" />
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "40px 40px" }} />
 
-        <motion.div style={{ opacity: heroOpacity }} className="container relative z-10 mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <motion.div style={{ opacity: heroOpacity }} className="container relative z-10 mx-auto px-4 py-20 lg:py-0">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mt-8 lg:mt-0">
             {/* Text side */}
             <div className="order-2 lg:order-1">
               <motion.div
@@ -259,7 +259,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.15] mb-6"
+                className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.2] mb-6 text-balance"
               >
                 طابعات ومستلزمات
                 <br />
@@ -304,7 +304,7 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="flex items-center gap-6 mt-10 pt-8 border-t border-border/40"
+                className="flex items-center gap-4 md:gap-6 mt-10 pt-8 border-t border-border/40 flex-wrap"
               >
                 {[
                   { label: "ISO 9001", sub: "إدارة الجودة" },
@@ -378,7 +378,7 @@ export default function Home() {
                   alt="طابعات متينة وعالية الجودة"
                   width={600}
                   height={450}
-                  className="object-cover w-full h-[300px] md:h-[400px]"
+                  className="object-cover w-full h-[240px] md:h-[400px]"
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   loading="lazy"
                 />
@@ -404,7 +404,7 @@ export default function Home() {
                 <PackageCheck className="w-3.5 h-3.5" />
                 المتانة والجودة
               </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold mb-6 leading-tight">
+              <h2 className="text-3xl md:text-4xl font-extrabold mb-6 leading-tight text-balance">
                 صُنعت من أجل
                 <br />
                 <span className="text-primary">المتانة والأداء</span>
@@ -615,7 +615,7 @@ export default function Home() {
             {/* Connection line (dashed, starts/ends exactly at the center of the first/last items) */}
             <div className="hidden md:block absolute top-[42px] right-[10%] left-[10%] border-t-2 border-dashed border-primary/30 z-0" />
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-10 md:gap-4">
               {[
                 { year: "2007", title: "البداية الأولى", icon: <Printer className="w-4 h-4" />, desc: "ورشة طباعة منزلية صغيرة" },
                 { year: "2011", title: "ورشة متخصصة", icon: <Building2 className="w-4 h-4" />, desc: "تقنيات طباعة احترافية متعددة" },
@@ -731,7 +731,7 @@ export default function Home() {
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
           >
-            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 drop-shadow-md leading-tight">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 drop-shadow-md leading-tight text-balance">
               حلول الطباعة للمهنيين
               <br />
               والمؤسسات
