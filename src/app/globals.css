@@ -24,6 +24,13 @@
     --input: 0 0% 89.8%;
     --ring: 351 100% 41%;
     --radius: 0.5rem;
+
+    /* Brand Tokens */
+    --red: #C7302A;
+    --red-dark: #9E2521;
+    --ink: #1C1C1E;
+    --paper: #F7F6F4;
+    --line: #E7E4DF;
   }
 
   .dark {
@@ -46,6 +53,13 @@
     --border: 0 0% 14.9%;
     --input: 0 0% 14.9%;
     --ring: 351 100% 50%;
+
+    /* Brand Tokens */
+    --red: #C7302A;
+    --red-dark: #9E2521;
+    --ink: #1C1C1E;
+    --paper: #F7F6F4;
+    --line: #E7E4DF;
   }
 }
 
@@ -67,3 +81,43 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Diagonal Client Segment Shapes inspired by reference */
+/* Mobile (< 768px): Lower idle overlay (starting at 52%-64%) showing photo clearly in top ~55% */
+.segment-shape-left {
+  clip-path: polygon(0 64%, 100% 52%, 100% 100%, 0 100%);
+  transition: clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: clip-path;
+}
+.segment-shape-left.is-expanded {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.segment-shape-right {
+  clip-path: polygon(0 52%, 100% 64%, 100% 100%, 0 100%);
+  transition: clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: clip-path;
+}
+.segment-shape-right.is-expanded {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+
+/* Desktop (>= 768px): Alternating left/right horizontal diagonal split */
+@media (min-width: 768px) {
+  .segment-shape-left {
+    clip-path: polygon(0 0, 58% 0, 48% 100%, 0 100%);
+  }
+  .group:hover .segment-shape-left,
+  .segment-shape-left.is-expanded {
+    clip-path: polygon(0 0, 72% 0, 62% 100%, 0 100%);
+  }
+
+  .segment-shape-right {
+    clip-path: polygon(42% 0, 100% 0, 100% 100%, 52% 100%);
+  }
+  .group:hover .segment-shape-right,
+  .segment-shape-right.is-expanded {
+    clip-path: polygon(28% 0, 100% 0, 100% 100%, 38% 100%);
+  }
+}
+

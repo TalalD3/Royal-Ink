@@ -26,6 +26,8 @@ import {
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import SqueezeCarouselDemo from "@/components/ui/demo";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
+import { LogoCloudCerts } from "@/components/ui/logo-cloud-certs";
+import { ClientSegments } from "@/components/ui/client-segments";
 
 /* ══════════════════════════════════════════════════════════════════════
    ANIMATED COUNTER — counts up when in view
@@ -301,27 +303,13 @@ export default function Home() {
                 </Link>
               </motion.div>
 
-              {/* Trust badges */}
+              {/* Certification Logo Cloud */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="flex items-center gap-4 md:gap-6 mt-10 pt-8 border-t border-border/40 flex-wrap"
               >
-                {[
-                  { label: "ISO 9001", sub: "إدارة الجودة" },
-                  { label: "ISO 14001", sub: "إدارة البيئة" },
-                  { label: "RoHS", sub: "سلامة المواد" },
-                ].map((badge) => (
-                  <div key={badge.label} className="text-center">
-                    <span className="block text-xs font-bold text-foreground/70 tracking-wider">
-                      {badge.label}
-                    </span>
-                    <span className="block text-[10px] text-muted-foreground mt-0.5">
-                      {badge.sub}
-                    </span>
-                  </div>
-                ))}
+                <LogoCloudCerts />
               </motion.div>
             </div>
 
@@ -583,6 +571,11 @@ export default function Home() {
           <SqueezeCarouselDemo />
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 5.5 — CLIENT SEGMENTS
+          ═══════════════════════════════════════════════════════════════ */}
+      <ClientSegments />
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 6 — BRIEF STORY TIMELINE

@@ -19,6 +19,13 @@ const config = {
     },
     extend: {
       colors: {
+        red: {
+          DEFAULT: "var(--red)",
+          dark: "var(--red-dark)",
+        },
+        ink: "var(--ink)",
+        paper: "var(--paper)",
+        line: "var(--line)",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
