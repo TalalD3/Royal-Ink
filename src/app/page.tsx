@@ -28,6 +28,7 @@ import SqueezeCarouselDemo from "@/components/ui/demo";
 import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
 import { LogoCloudCerts } from "@/components/ui/logo-cloud-certs";
 import { ClientSegments } from "@/components/ui/client-segments";
+import { StoreLocatorSection } from "@/components/ui/store-locator-section";
 
 /* ══════════════════════════════════════════════════════════════════════
    ANIMATED COUNTER — counts up when in view
@@ -576,6 +577,11 @@ export default function Home() {
           SECTION 5.5 — CLIENT SEGMENTS
           ═══════════════════════════════════════════════════════════════ */}
       <ClientSegments />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 5.7 — STORE LOCATOR MAP
+          ═══════════════════════════════════════════════════════════════ */}
+      <StoreLocatorSection />
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 6 — BRIEF STORY TIMELINE

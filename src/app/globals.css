@@ -121,3 +121,34 @@
   }
 }
 
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Find Us Hero Map Cover responsive fade */
+.find-us-hero-fade {
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0) 98%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0) 98%);
+}
+@media (min-width: 1024px) {
+  .find-us-hero-fade {
+    mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 95%);
+    -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 40%, rgba(0, 0, 0, 0) 95%);
+  }
+}
+
+.hero-map-desktop-fade {
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 35%, rgba(0, 0, 0, 0.5) 65%, transparent 95%);
+  mask-image: linear-gradient(to right, #000 0%, #000 35%, rgba(0, 0, 0, 0.5) 65%, transparent 95%);
+}
+
+.hero-map-mobile-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 40%, rgba(0, 0, 0, 0.4) 75%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 40%, rgba(0, 0, 0, 0.4) 75%, transparent 100%);
+}
+

@@ -34,6 +34,7 @@ export default function RootLayout({
               <Link href="/" className="text-primary font-semibold transition-colors hover:text-red-700">الرئيسية</Link>
               <Link href="/about" className="text-gray-600 transition-colors hover:text-primary">من نحن</Link>
               <Link href="/quality" className="text-gray-600 transition-colors hover:text-primary">الجودة</Link>
+              <Link href="/find-us" className="text-gray-600 transition-colors hover:text-primary">نقاط البيع</Link>
               <Link href="/contact" className="bg-primary text-white px-6 py-2.5 rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">اتصل بنا</Link>
             </nav>
             {/* Hamburger (Mobile) */}
@@ -78,6 +79,7 @@ export default function RootLayout({
                   <Link href="/" className="hover:text-white transition-colors w-fit">الرئيسية</Link>
                   <Link href="/about" className="hover:text-white transition-colors w-fit">من نحن</Link>
                   <Link href="/quality" className="hover:text-white transition-colors w-fit">الجودة</Link>
+                  <Link href="/find-us" className="hover:text-white transition-colors w-fit">نقاط البيع</Link>
                   <Link href="/contact" className="hover:text-white transition-colors w-fit">اتصل بنا</Link>
                 </nav>
               </div>
