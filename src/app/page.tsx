@@ -29,6 +29,7 @@ import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-w
 import { LogoCloudCerts } from "@/components/ui/logo-cloud-certs";
 import { ClientSegments } from "@/components/ui/client-segments";
 import { StoreLocatorSection } from "@/components/ui/store-locator-section";
+import { BrandsSlider } from "@/components/ui/brands-slider";
 
 /* ══════════════════════════════════════════════════════════════════════
    ANIMATED COUNTER — counts up when in view
@@ -349,6 +350,11 @@ export default function Home() {
         </motion.div>
         </BackgroundBeamsWithCollision>
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 1.5 — ASSOCIATED BRANDS SLIDER
+          ═══════════════════════════════════════════════════════════════ */}
+      <BrandsSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2 — FEATURE HIGHLIGHT (split, reversed)
