@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { MapPin, ArrowRight, Phone, Building2 } from "lucide-react";
 import { AlgeriaMapInteractive } from "@/components/ui/algeria-map";
-import { getActiveCities, distributors } from "@/data/distributors";
+import { useDistributors } from "@/hooks/use-distributors";
 
 /* ══════════════════════════════════════════════════════════════════════
    FIND US PAGE — /find-us
@@ -13,9 +13,9 @@ import { getActiveCities, distributors } from "@/data/distributors";
    ══════════════════════════════════════════════════════════════════════ */
 
 export default function FindUsPage() {
-  const activeCities = getActiveCities();
-  const totalDistributors = distributors.length;
-  const totalCities = activeCities.length;
+  const { distributors: liveDistributors, activeWilayaCodes } = useDistributors();
+  const totalDistributors = liveDistributors.length;
+  const totalWilayas = activeWilayaCodes.size;
 
   return (
     <div className="flex flex-col bg-background min-h-screen">
@@ -157,10 +157,10 @@ export default function FindUsPage() {
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl md:text-2xl font-black text-foreground">
-                    {totalCities}
+                    {totalWilayas}
                   </span>
                   <span className="text-sm font-semibold text-muted-foreground">
-                    ولايات
+                    ولاية مغطاة
                   </span>
                 </div>
               </div>
@@ -194,7 +194,7 @@ export default function FindUsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.7 }}
           >
-            <AlgeriaMapInteractive />
+            <AlgeriaMapInteractive distributors={liveDistributors} />
           </motion.div>
         </div>
       </section>

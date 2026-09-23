@@ -23,16 +23,17 @@ import {
 import {
   type Distributor,
   badgeConfig,
-  getDistributorsByWilaya,
+  getDistributorsByWilaya as staticGetDistributorsByWilaya,
   distributors,
 } from "@/data/distributors";
+import { useDistributors } from "@/hooks/use-distributors";
 
 /* ══════════════════════════════════════════════════════════════════════
    MAP CONSTANTS & HELPERS
    ══════════════════════════════════════════════════════════════════════ */
 
-/** Codes of wilayas that currently have distributors */
-const ACTIVE_WILAYA_CODES = new Set(distributors.map((d) => d.wilayaCode));
+/** Fallback codes of wilayas that currently have distributors */
+const DEFAULT_ACTIVE_WILAYA_CODES = new Set(distributors.map((d) => d.wilayaCode));
 
 /* ──────────────────────────────────────────────────────────────────────
    TOP INFO HEADER BAR (PLACED CLEANLY ABOVE THE MAP — ZERO OVERLAP)
@@ -440,13 +441,20 @@ function DistributorCard({
    - Pins show labels only on hover
    ══════════════════════════════════════════════════════════════════════ */
 
-export function AlgeriaMapPreview() {
+export function AlgeriaMapPreview({
+  distributors: propDistributors,
+}: {
+  distributors?: Distributor[];
+} = {}) {
   const [hoveredWilaya, setHoveredWilaya] = useState<WilayaData | null>(null);
   const [selectedWilaya, setSelectedWilaya] = useState<WilayaData | null>(null);
 
+  const { activeWilayaCodes, getDistributorsByWilaya } =
+    useDistributors(propDistributors);
+
   const activeWilayasWithDistributors = useMemo(
-    () => algeriaWilayas.filter((w) => ACTIVE_WILAYA_CODES.has(w.code)),
-    []
+    () => algeriaWilayas.filter((w) => activeWilayaCodes.has(w.code)),
+    [activeWilayaCodes]
   );
 
   return (
@@ -517,7 +525,7 @@ export function AlgeriaMapPreview() {
           <g id="wilayas-group">
             {algeriaWilayas.map((wilaya) => {
               const isHQ = wilaya.code === 19;
-              const hasDistributors = ACTIVE_WILAYA_CODES.has(wilaya.code);
+              const hasDistributors = activeWilayaCodes.has(wilaya.code);
               const isHovered = hoveredWilaya?.code === wilaya.code;
               const isSelected = selectedWilaya?.code === wilaya.code;
 
@@ -613,7 +621,11 @@ export function AlgeriaMapPreview() {
    - Soft, gentle scroll when selecting a wilaya
    ══════════════════════════════════════════════════════════════════════ */
 
-export function AlgeriaMapInteractive() {
+export function AlgeriaMapInteractive({
+  distributors: propDistributors,
+}: {
+  distributors?: Distributor[];
+} = {}) {
   // Clean initial state: no wilaya pre-selected, no text clutter on map
   const [selectedWilayaCode, setSelectedWilayaCode] = useState<number | null>(null);
   const [hoveredWilaya, setHoveredWilaya] = useState<WilayaData | null>(null);
@@ -622,9 +634,12 @@ export function AlgeriaMapInteractive() {
   const [searchQuery, setSearchQuery] = useState("");
   const infoPanelRef = useRef<HTMLDivElement>(null);
 
+  const { activeWilayaCodes, getDistributorsByWilaya } =
+    useDistributors(propDistributors);
+
   const activeWilayasWithDistributors = useMemo(
-    () => algeriaWilayas.filter((w) => ACTIVE_WILAYA_CODES.has(w.code)),
-    []
+    () => algeriaWilayas.filter((w) => activeWilayaCodes.has(w.code)),
+    [activeWilayaCodes]
   );
 
   const selectedWilaya = useMemo(
@@ -636,8 +651,9 @@ export function AlgeriaMapInteractive() {
   );
 
   const currentDistributors = useMemo(
-    () => (selectedWilayaCode ? getDistributorsByWilaya(selectedWilayaCode) : []),
-    [selectedWilayaCode]
+    () =>
+      selectedWilayaCode ? getDistributorsByWilaya(selectedWilayaCode) : [],
+    [selectedWilayaCode, getDistributorsByWilaya]
   );
 
   const currentHoverOrSelected = hoveredWilaya || selectedWilaya || null;
@@ -698,7 +714,7 @@ export function AlgeriaMapInteractive() {
             {searchResults.length > 0 && (
               <div className="absolute top-full mt-2 right-0 w-full bg-background/95 backdrop-blur-md rounded-2xl border border-border/40 shadow-xl z-50 overflow-hidden py-1">
                 {searchResults.map((w) => {
-                  const hasDist = ACTIVE_WILAYA_CODES.has(w.code);
+                  const hasDist = activeWilayaCodes.has(w.code);
                   return (
                     <button
                       key={w.id}
@@ -815,7 +831,7 @@ export function AlgeriaMapInteractive() {
             <g id="wilayas-group-interactive">
               {algeriaWilayas.map((wilaya) => {
                 const isHQ = wilaya.code === 19;
-                const hasDistributors = ACTIVE_WILAYA_CODES.has(wilaya.code);
+                const hasDistributors = activeWilayaCodes.has(wilaya.code);
                 const isHovered = hoveredWilaya?.code === wilaya.code;
                 const isSelected = selectedWilayaCode === wilaya.code;
 

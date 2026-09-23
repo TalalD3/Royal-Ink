@@ -26,12 +26,22 @@ export const COMPANY_CERTIFICATES: CertificateItem[] = [
   {
     id: "iso-9001",
     code: "ISO 9001",
-    title: "نظام إدارة الجودة (SGS)",
-    englishTitle: "Quality Assured Firm — ISO 9001",
+    title: "نظام إدارة الجودة الدولي",
+    englishTitle: "Quality Management System — ISO 9001",
     description:
-      "شهادة اعتماد دولية من هيئة SGS العالمية تؤكد تطبيق معايير إدارة وتوكيد الجودة الصارمة لضمان ثبات أداء كل خرطوشة.",
+      "شهادة اعتماد دولية تؤكد تطبيق معايير إدارة وتوكيد الجودة الصارمة لضمان ثبات أداء وموثوقية كل خرطوشة طباعة.",
     logo: "/images/certificate/Artboard 3.svg",
-    badge: "توكيد جودة SGS",
+    badge: "توكيد جودة معتمد",
+  },
+  {
+    id: "sgs",
+    code: "SGS",
+    title: "شهادة فحص واعتماد SGS الدولية",
+    englishTitle: "SGS Certified — Inspection & Verification",
+    description:
+      "اعتماد وتفتيش دوري مستقل من هيئة SGS السويسرية الرائدة عالمياً في فحص ومطابقة معايير التصنيع والجودة الصارمة.",
+    logo: "/images/certificate/Artboard 5.svg",
+    badge: "اعتماد وتفتيش SGS",
   },
   {
     id: "iso-14001",
@@ -102,6 +112,16 @@ export const COMPANY_CERTIFICATES: CertificateItem[] = [
       "مصادقة وتفتيش دوري مستقل من هيئة Bureau Veritas العالمية الرائدة في التحقق من الامتثال ومعايير الجودة الصناعية.",
     logo: "/images/certificate/Artboard 9.svg",
     badge: "تفتيش واعتماد دولي",
+  },
+  {
+    id: "china-environmental-label",
+    code: "Ten Rings",
+    title: "العلامة البيئية الصينية (Ten Rings)",
+    englishTitle: "China Environmental Labelling (Ten Rings)",
+    description:
+      "شهادة الاعتماد البيئي الرسمية الرائدة لمستلزمات الطباعة، تؤكد الامتثال لأعلى معايير التصنيع الأخضر وخلو المنتجات من الانبعاثات الضارة.",
+    logo: "/images/certificate/Artboard 10.svg",
+    badge: "اعتماد بيئي أخضر",
   },
 ];
 
