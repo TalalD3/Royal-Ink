@@ -1,38 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  Search,
   Printer,
   Sparkles,
   ArrowLeft,
   CheckCircle2,
-  Package,
   Layers,
   ShieldCheck,
   Zap,
 } from "lucide-react";
 
 export function CompatibilityTeaserSection() {
-  const [query, setQuery] = useState("");
-  const router = useRouter();
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      router.push(`/compatibility?q=${encodeURIComponent(query.trim())}`);
-    } else {
-      router.push("/compatibility");
-    }
-  };
-
-  const handleQuickTagClick = (tag: string) => {
-    router.push(`/compatibility?q=${encodeURIComponent(tag)}`);
-  };
-
   return (
     <section className="py-16 md:py-24 relative overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background border-y border-border/50">
       {/* Ambient background glow accents */}
@@ -51,18 +32,18 @@ export function CompatibilityTeaserSection() {
           {/* Subtle Top Red Accent Line */}
           <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-primary" />
 
-          {/* Grid Layout: Header & Search on Right/Top, Features & Action on Left */}
+          {/* Grid Layout: Header & CTA on Right/Top, Value Highlights on Left */}
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Right Side: Headline, Pitch, Interactive Search Input */}
+            {/* Right Side: Headline, Descriptions, Key Benefits & Gateway Button */}
             <div className="lg:col-span-7 space-y-6 text-right">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-bold tracking-wide shadow-xs">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>محرك فحص التوافق الذكي — Royal Ink</span>
+                <span>دليل التوافق الذكي — Royal Ink</span>
               </div>
 
               {/* Title */}
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-[1.25] tracking-tight">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground leading-[1.3] tracking-tight">
                 هل تبحث عن الحبر{" "}
                 <span className="bg-gradient-to-l from-red-600 to-rose-500 bg-clip-text text-transparent">
                   المتوافق تماماً
@@ -70,111 +51,107 @@ export function CompatibilityTeaserSection() {
                 مع طابعتك؟
               </h2>
 
-              {/* Description */}
+              {/* Descriptions & Attractive Text */}
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                لا داعي للقلق بشأن اختيار خرطوشة غير مطابقة! اكتب موديل طابعتك أو رمز الحبر لمعرفة المستلزمات المتوافقة بنسبة 100% والمضمونة بجودة أصلية في جميع ولايات الجزائر.
+                لا داعي للقلق بشأن اختيار خرطوشة غير مطابقة! لقد صممنا لك دليلاً شاملاً وسهل الاستخدام يتيح لك معرفة المستلزمات المتوافقة بنسبة 100% والمضمونة بجودة أصلية لحماية طابعتك وضمان أفضل نتائج الطباعة.
               </p>
 
-              {/* Interactive Mini Search Bar */}
-              <form onSubmit={handleSearchSubmit} className="pt-2">
-                <div className="relative flex items-center bg-background border-2 border-primary/40 hover:border-primary/80 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 rounded-2xl p-1.5 shadow-lg shadow-black/5 transition-all">
-                  <Search className="w-5 h-5 text-primary mr-3 ml-2 shrink-0 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="اكتب موديل طابعتك (مثال: HP M404, Canon 6030, Epson L3150)..."
-                    className="w-full h-11 bg-transparent text-sm md:text-base text-foreground focus:outline-none placeholder:text-muted-foreground/60 px-2"
-                  />
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs sm:text-sm font-bold hover:bg-primary/90 transition-all shadow-md shadow-primary/25 shrink-0 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>فحص التوافق</span>
-                    <ArrowLeft className="w-4 h-4" />
-                  </button>
+              {/* Feature Check Points */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="flex items-center gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium bg-muted/40 p-3 rounded-xl border border-border/60">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>تغطية لأشهر الماركات (HP, Canon, Epson, Brother)</span>
                 </div>
-              </form>
+                <div className="flex items-center gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium bg-muted/40 p-3 rounded-xl border border-border/60">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>فحص بالاتجاهين: بالطابعة أو برمز الخرطوشة</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium bg-muted/40 p-3 rounded-xl border border-border/60">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>خراطيش معتمدة لحماية رؤوس وأجزاء الطابعة</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-xs sm:text-sm text-foreground/90 font-medium bg-muted/40 p-3 rounded-xl border border-border/60">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>توصيل سريع ومضمون إلى كافة الـ 58 ولاية</span>
+                </div>
+              </div>
 
-              {/* Popular Quick Tags */}
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-                <span className="text-muted-foreground font-semibold text-[11px]">
-                  الأكثر بحثاً:
+              {/* The Call-To-Action Button leading to the page */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <Link
+                  href="/compatibility"
+                  className="group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-primary text-white text-sm sm:text-base font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 transition-all text-center cursor-pointer"
+                >
+                  <span>دخول دليل التوافق الشامل</span>
+                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                </Link>
+                <span className="text-xs text-muted-foreground text-center sm:text-right">
+                  قاعدة بيانات محدثة وشاملة لجميع الموديلات
                 </span>
-                {[
-                  { label: "HP LaserJet Pro P1102 (85A)", q: "P1102" },
-                  { label: "Canon LBP6030 (725)", q: "LBP6030" },
-                  { label: "HP LaserJet M404 (59A)", q: "M404" },
-                  { label: "Epson EcoTank L3150 (103)", q: "L3150" },
-                  { label: "Brother DCP-L2540DW", q: "L2540" },
-                ].map((item, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleQuickTagClick(item.q)}
-                    className="px-2.5 py-1 rounded-lg bg-muted/60 hover:bg-primary/15 hover:text-primary text-foreground text-[11px] font-medium transition-colors border border-border/60 cursor-pointer"
-                  >
-                    {item.label}
-                  </button>
-                ))}
               </div>
             </div>
 
-            {/* Left Side: Visual Feature Cards & Primary Gateway */}
-            <div className="lg:col-span-5 space-y-4">
-              {/* Feature Highlights Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                <div className="p-4 rounded-2xl bg-muted/30 border border-border/70 flex items-start gap-3.5 hover:border-primary/40 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-foreground mb-0.5">
-                      بحث ذكي في الاتجاهين
-                    </h4>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                      ابحث بموديل الطابعة لمعرفة حبرها، أو ابحث برمز الحبر لمعرفة الطابعات التي تدعمه.
-                    </p>
-                  </div>
+            {/* Left Side: Visual Value Cards */}
+            <div className="lg:col-span-5 space-y-3.5">
+              {/* Card 1 */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-muted/30 border border-border/70 flex items-start gap-4 hover:border-primary/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                  <Layers className="w-5 h-5" />
                 </div>
-
-                <div className="p-4 rounded-2xl bg-muted/30 border border-border/70 flex items-start gap-3.5 hover:border-primary/40 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-foreground mb-0.5">
-                      توافق مضمون وحماية للطابعة
-                    </h4>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                      خراطيش تونر وأحبار سائلة مصنعة بمقاييس دقيقة لحماية رؤوس وأجزاء الطابعة.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl bg-muted/30 border border-border/70 flex items-start gap-3.5 hover:border-primary/40 transition-colors">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <Zap className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-foreground mb-0.5">
-                      طلب مباشر عبر واتساب والهاتف
-                    </h4>
-                    <p className="text-[11px] sm:text-xs text-muted-foreground leading-relaxed">
-                      تأكيد فوري للطلب مع خدمة التوصيل السريع إلى جميع الولايات.
-                    </p>
-                  </div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mb-1">
+                    دليل ذكي بالاتجاهين
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    ابحث بموديل الطابعة لمعرفة حبرها، أو ابحث برمز الحبر لمعرفة جميع الطابعات التي تدعمه بدقة متناهية.
+                  </p>
                 </div>
               </div>
 
-              {/* Gateway CTA Button */}
-              <Link
-                href="/compatibility"
-                className="w-full inline-flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-gradient-to-r from-red-600 to-primary text-white text-xs sm:text-sm font-bold hover:shadow-xl hover:shadow-primary/25 hover:opacity-95 transition-all text-center cursor-pointer"
-              >
-                <span>دخول دليل التوافق الشامل وتصفح الكتالوج</span>
-                <ArrowLeft className="w-4 h-4" />
-              </Link>
+              {/* Card 2 */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-muted/30 border border-border/70 flex items-start gap-4 hover:border-primary/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mb-1">
+                    توافق مضمون وحماية للطابعة
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    خراطيش تونر وأحبار سائلة مصنعة بمقاييس دقيقة تضمن أعلى جودة طباعة وتحافظ على سلامة جهازك.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3 */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-muted/30 border border-border/70 flex items-start gap-4 hover:border-primary/40 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-foreground mb-1">
+                    طلب مباشر وتوصيل سريع
+                  </h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    إمكانية طلب الحبر المتوافق فوراً مع تأكيد سريع عبر واتساب والتوصيل حتى باب منزلك أو مكتبك.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom Quick Metric Banner */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-xs">
+                    <Printer className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">
+                    أكثر من 500+ طابعة وخرطوشة مسجلة
+                  </span>
+                </div>
+                <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                  متوافق 100%
+                </span>
+              </div>
             </div>
           </div>
         </motion.div>
