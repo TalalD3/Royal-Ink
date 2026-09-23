@@ -50,6 +50,21 @@ export default function CompatibilityPage() {
     });
   };
 
+  // Read query params from URL on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) {
+        setSearchQuery(q);
+      }
+      const brand = params.get("brand");
+      if (brand) {
+        setSelectedBrands([brand]);
+      }
+    }
+  }, []);
+
   // Close modal on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

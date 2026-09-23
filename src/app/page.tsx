@@ -30,6 +30,7 @@ import { LogoCloudCerts } from "@/components/ui/logo-cloud-certs";
 import { ClientSegments } from "@/components/ui/client-segments";
 import { StoreLocatorSection } from "@/components/ui/store-locator-section";
 import { BrandsSlider } from "@/components/ui/brands-slider";
+import { CompatibilityTeaserSection } from "@/components/ui/compatibility-teaser-section";
 
 /* ══════════════════════════════════════════════════════════════════════
    ANIMATED COUNTER — counts up when in view
@@ -355,6 +356,11 @@ export default function Home() {
           SECTION 1.5 — ASSOCIATED BRANDS SLIDER
           ═══════════════════════════════════════════════════════════════ */}
       <BrandsSlider />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 1.8 — SMART COMPATIBILITY DIRECTORY TEASER
+          ═══════════════════════════════════════════════════════════════ */}
+      <CompatibilityTeaserSection />
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 2 — FEATURE HIGHLIGHT (split, reversed)
