@@ -31,6 +31,7 @@
     --ink: #1C1C1E;
     --paper: #F7F6F4;
     --line: #E7E4DF;
+    --gray: #5B5F66;
   }
 
   .dark {
@@ -60,6 +61,7 @@
     --ink: #1C1C1E;
     --paper: #F7F6F4;
     --line: #E7E4DF;
+    --gray: #5B5F66;
   }
 }
 
