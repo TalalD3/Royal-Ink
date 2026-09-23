@@ -4,6 +4,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { initialProducts } from "@/data/initial-products";
 import type { Product } from "@/types/product";
 
+export const dynamic = "force-dynamic";
+
 async function checkAdminAuth(req: NextRequest) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;

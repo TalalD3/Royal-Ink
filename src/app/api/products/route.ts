@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { initialProducts } from "@/data/initial-products";
 import type { Product } from "@/types/product";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
