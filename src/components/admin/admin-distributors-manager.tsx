@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase, type DbDistributor } from "@/lib/supabase/client";
 import { algeriaWilayas } from "@/data/algeria-wilayas";
 import { badgeConfig, type BadgeTier } from "@/data/distributors";
+import {
+  exportDistributorsToExcel,
+  downloadDistributorsTemplate,
+  parseDistributorsExcel,
+  type NewDistributorPayload,
+} from "@/lib/excel/distributors-excel";
 import {
   MapPin,
   Plus,
@@ -19,6 +25,11 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Download,
+  Upload,
+  FileDown,
+  FileSpreadsheet,
+  AlertTriangle,
 } from "lucide-react";
 
 export function AdminDistributorsManager() {
@@ -43,6 +54,19 @@ export function AdminDistributorsManager() {
   const [formLocationUrl, setFormLocationUrl] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formAddress, setFormAddress] = useState("");
+
+  // Excel Import Modal States
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<{
+    distributors: NewDistributorPayload[];
+    total: number;
+    errors: string[];
+  } | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Clear confirmation state
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Fetch all distributors
   const fetchDistributors = async () => {
@@ -306,6 +330,85 @@ export function AdminDistributorsManager() {
     }
   };
 
+  // Handle Excel file selection for Import
+  const handleSelectExcelFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImporting(true);
+      const result = await parseDistributorsExcel(file);
+      setImportPreview(result);
+    } catch (err) {
+      alert("تعذر قراءة ملف الـ Excel. يرجى التأكد من صحة التنسيق.");
+    } finally {
+      setImporting(false);
+      if (importFileInputRef.current) importFileInputRef.current.value = "";
+    }
+  };
+
+  // Confirm Excel Import
+  const handleConfirmImport = async () => {
+    if (!importPreview || importPreview.distributors.length === 0) return;
+
+    setImporting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch("/api/admin/distributors", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(importPreview.distributors),
+      });
+
+      if (res.ok) {
+        setIsImportModalOpen(false);
+        setImportPreview(null);
+        fetchDistributors();
+        alert(`تم بنجاح استيراد ${importPreview.distributors.length} نقطة بيع!`);
+      } else {
+        const json = await res.json().catch(() => null);
+        alert(json?.error || "حدث خطأ أثناء استيراد نقاط البيع.");
+      }
+    } catch {
+      alert("حدث خطأ أثناء الاستيراد.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Delete all distributors
+  const handleDeleteAllDistributors = async () => {
+    if (distributors.length === 0) return;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch("/api/admin/distributors?id=all", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (res.ok) {
+        setDistributors([]);
+        setShowClearConfirm(false);
+      }
+    } catch {
+      alert("حدث خطأ أثناء إفراغ نقاط البيع.");
+    }
+  };
+
   // Sorted Wilayas list for dropdown
   const sortedWilayas = useMemo(() => {
     return [...algeriaWilayas].sort((a, b) => a.code - b.code);
@@ -403,24 +506,94 @@ export function AdminDistributorsManager() {
 
       {/* ─── TOOLBAR ─── */}
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>إضافة نقطة بيع</span>
-          </button>
-
-          {distributors.length === 0 && !loading && (
+        {/* Row 1: Action buttons */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleSeedDefaults}
+              onClick={openCreateModal}
+              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>إضافة نقطة بيع</span>
+            </button>
+
+            <button
+              onClick={downloadDistributorsTemplate}
+              title="تحميل ملف Excel تجريبي"
               className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>بذر بيانات نموذجية</span>
+              <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>نموذج Excel</span>
             </button>
-          )}
+
+            {distributors.length === 0 && !loading && (
+              <button
+                onClick={handleSeedDefaults}
+                className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>بذر بيانات نموذجية</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportDistributorsToExcel(distributors)}
+              title="تصدير الكل إلى ملف Excel"
+              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>تصدير</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setImportPreview(null);
+                setIsImportModalOpen(true);
+              }}
+              title="استيراد نقاط بيع من ملف Excel"
+              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
+              <span>استيراد</span>
+            </button>
+
+            {/* Clear all selling points — double confirmation */}
+            {distributors.length > 0 && (
+              <div className="relative">
+                {!showClearConfirm ? (
+                  <button
+                    onClick={() => setShowClearConfirm(true)}
+                    title="إفراغ نقاط البيع"
+                    className="inline-flex items-center gap-1 px-2 py-[7px] rounded-md text-[11px] font-medium text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span className="hidden sm:inline">إفراغ</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md px-2 py-1">
+                    <AlertTriangle className="w-3 h-3 text-red-500" />
+                    <span className="text-[11px] text-red-700 dark:text-red-400 font-medium">
+                      حذف {distributors.length} نقطة؟
+                    </span>
+                    <button
+                      onClick={handleDeleteAllDistributors}
+                      className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 cursor-pointer"
+                    >
+                      تأكيد
+                    </button>
+                    <button
+                      onClick={() => setShowClearConfirm(false)}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Search + Filters */}
@@ -776,6 +949,95 @@ export function AdminDistributorsManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── EXCEL IMPORT MODAL ─── */}
+      {isImportModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          dir="rtl"
+        >
+          <div className="relative w-full max-w-md bg-white dark:bg-card border border-border rounded-lg shadow-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                <div>
+                  <h3 className="text-[13px] font-semibold text-foreground">استيراد نقاط البيع من Excel</h3>
+                  <p className="text-[11px] text-muted-foreground">يدعم ملفات .xlsx و .xls</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsImportModalOpen(false)}
+                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <input
+              type="file"
+              ref={importFileInputRef}
+              onChange={handleSelectExcelFile}
+              accept=".xlsx, .xls"
+              className="hidden"
+            />
+
+            <div
+              onClick={() => importFileInputRef.current?.click()}
+              className="border-2 border-dashed border-border hover:border-primary/40 rounded-md p-6 text-center cursor-pointer transition-colors bg-muted/10 hover:bg-primary/5"
+            >
+              <Upload className="w-6 h-6 text-muted-foreground/50 mx-auto mb-1.5" />
+              <p className="text-[12px] font-medium text-foreground mb-0.5">
+                اضغط لاختيار ملف Excel لنقاط البيع
+              </p>
+              <span className="text-[10px] text-muted-foreground">
+                استخدم زر "نموذج Excel" لتحميل جدول تجريبي منظم ومطابق
+              </span>
+            </div>
+
+            {importing && (
+              <div className="py-3 flex items-center justify-center gap-2 text-[12px] text-primary">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>جاري قراءة ومعالجة البيانات...</span>
+              </div>
+            )}
+
+            {importPreview && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-2.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 text-[12px] font-medium">
+                  <span>تم استخراج {importPreview.total} نقطة بيع بنجاح</span>
+                  <span className="text-[11px]">جاهزة للحفظ</span>
+                </div>
+
+                {importPreview.errors.length > 0 && (
+                  <div className="p-2 bg-red-50 dark:bg-red-950/20 text-red-600 rounded-md text-[11px] space-y-0.5 max-h-24 overflow-y-auto">
+                    {importPreview.errors.slice(0, 4).map((err, i) => (
+                      <p key={i}>⚠ {err}</p>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setImportPreview(null)}
+                    className="px-3 py-1.5 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="button"
+                    disabled={importing || importPreview.total === 0}
+                    onClick={handleConfirmImport}
+                    className="px-4 py-1.5 rounded-md bg-emerald-600 text-white text-[12px] font-semibold hover:bg-emerald-700 transition-colors cursor-pointer"
+                  >
+                    تأكيد واستيراد ({importPreview.total})
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

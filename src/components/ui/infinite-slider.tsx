@@ -9,6 +9,9 @@ type InfiniteSliderProps = {
   gap?: number;
   duration?: number;
   durationOnHover?: number;
+  /** Speed in pixels per second. When provided, automatically guarantees equal visual speed across all sliders regardless of item count or width. */
+  speed?: number;
+  speedOnHover?: number;
   direction?: 'horizontal' | 'vertical';
   reverse?: boolean;
   className?: string;
@@ -19,11 +22,14 @@ export function InfiniteSlider({
   gap = 16,
   duration = 25,
   durationOnHover,
+  speed,
+  speedOnHover,
   direction = 'horizontal',
   reverse = false,
   className,
 }: InfiniteSliderProps) {
   const [currentDuration, setCurrentDuration] = useState(duration);
+  const [currentSpeed, setCurrentSpeed] = useState(speed);
   const [ref, { width, height }] = useMeasure();
   const translation = useMotionValue(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -34,14 +40,22 @@ export function InfiniteSlider({
     const size = direction === 'horizontal' ? width : height;
     if (!size) return;
     const contentSize = size + gap;
-    const from = reverse ? -contentSize / 2 : 0;
-    const to = reverse ? 0 : -contentSize / 2;
+    const halfDistance = contentSize / 2;
+
+    // Calculate effective duration: if speed (px/sec) is specified, duration = distance / speed
+    const activeSpeed = currentSpeed ?? speed;
+    const effectiveDuration = activeSpeed
+      ? halfDistance / activeSpeed
+      : currentDuration;
+
+    const from = reverse ? -halfDistance : 0;
+    const to = reverse ? 0 : -halfDistance;
 
     if (isTransitioning) {
       controls = animate(translation, [translation.get(), to], {
         ease: 'linear',
         duration:
-          currentDuration * Math.abs((translation.get() - to) / contentSize),
+          effectiveDuration * Math.abs((translation.get() - to) / halfDistance),
         onComplete: () => {
           setIsTransitioning(false);
           setKey((prevKey) => prevKey + 1);
@@ -50,7 +64,7 @@ export function InfiniteSlider({
     } else {
       controls = animate(translation, [from, to], {
         ease: 'linear',
-        duration: currentDuration,
+        duration: effectiveDuration,
         repeat: Infinity,
         repeatType: 'loop',
         repeatDelay: 0,
@@ -65,6 +79,8 @@ export function InfiniteSlider({
     key,
     translation,
     currentDuration,
+    currentSpeed,
+    speed,
     width,
     height,
     gap,
@@ -73,18 +89,29 @@ export function InfiniteSlider({
     reverse,
   ]);
 
-  const hoverProps = durationOnHover
-    ? {
-        onHoverStart: () => {
-          setIsTransitioning(true);
-          setCurrentDuration(durationOnHover);
-        },
-        onHoverEnd: () => {
-          setIsTransitioning(true);
-          setCurrentDuration(duration);
-        },
-      }
-    : {};
+  const hoverProps =
+    durationOnHover || speedOnHover
+      ? {
+          onHoverStart: () => {
+            setIsTransitioning(true);
+            if (speedOnHover) {
+              setCurrentSpeed(speedOnHover);
+            }
+            if (durationOnHover) {
+              setCurrentDuration(durationOnHover);
+            }
+          },
+          onHoverEnd: () => {
+            setIsTransitioning(true);
+            if (speed) {
+              setCurrentSpeed(speed);
+            }
+            if (duration) {
+              setCurrentDuration(duration);
+            }
+          },
+        }
+      : {};
 
   return (
     <div className={cn('overflow-hidden', className)}>
@@ -106,3 +133,5 @@ export function InfiniteSlider({
     </div>
   );
 }
+
+export default InfiniteSlider;

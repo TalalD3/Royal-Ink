@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
   ArrowLeft,
   ShieldCheck,
@@ -14,81 +13,17 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
-  Printer,
-  PackageCheck,
   Sparkles,
-  CheckCircle2,
   Phone,
-  Mail,
-  MapPin,
-  Building2,
 } from "lucide-react";
-import { GlowingEffect } from "@/components/ui/glowing-effect";
-import SqueezeCarouselDemo from "@/components/ui/demo";
-import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
-import { LogoCloudCerts } from "@/components/ui/logo-cloud-certs";
-import { ClientSegments } from "@/components/ui/client-segments";
-import { StoreLocatorSection } from "@/components/ui/store-locator-section";
+
+import { HeroSlider } from "@/components/ui/hero-slider";
+import { CategoriesRow } from "@/components/ui/categories-row";
 import { BrandsSlider } from "@/components/ui/brands-slider";
 import { CompatibilityTeaserSection } from "@/components/ui/compatibility-teaser-section";
-
-/* ══════════════════════════════════════════════════════════════════════
-   ANIMATED COUNTER — counts up when in view
-   ══════════════════════════════════════════════════════════════════════ */
-function AnimatedCounter({
-  target,
-  suffix = "",
-  prefix = "",
-  duration = 2,
-}: {
-  target: number;
-  suffix?: string;
-  prefix?: string;
-  duration?: number;
-}) {
-  const [count, setCount] = useState(0);
-  const [started, setStarted] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started) {
-          setStarted(true);
-        }
-      },
-      { threshold: 0.5 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [started]);
-
-  useEffect(() => {
-    if (!started) return;
-    const step = target / (duration * 60);
-    let current = 0;
-    const interval = setInterval(() => {
-      current += step;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(interval);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, 1000 / 60);
-    return () => clearInterval(interval);
-  }, [started, target, duration]);
-
-  return (
-    <span ref={ref}>
-      {prefix}
-      {count}
-      {suffix}
-    </span>
-  );
-}
+import { StoreLocatorSection } from "@/components/ui/store-locator-section";
+import { CertificatesSlider } from "@/components/ui/certificates-slider";
+import { ClientSegments } from "@/components/ui/client-segments";
 
 /* ══════════════════════════════════════════════════════════════════════
    FAQ ITEM — custom accordion with animation
@@ -144,13 +79,6 @@ function FAQItem({
 /* ══════════════════════════════════════════════════════════════════════
    DATA
    ══════════════════════════════════════════════════════════════════════ */
-
-const stats = [
-  { value: 15, suffix: "+", label: "سنة من الخبرة" },
-  { value: 1000, suffix: "+", label: "عميل وموزع" },
-  { value: 58, suffix: "", label: "ولاية مغطاة" },
-  { value: 4, suffix: "", label: "شهادات جودة" },
-];
 
 const commitments = [
   {
@@ -226,251 +154,46 @@ const faqs = [
 
 export default function Home() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const heroParallax = useTransform(scrollYProgress, [0, 1], [0, 100]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
 
   return (
     <div className="flex flex-col bg-background">
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1 — HERO (split layout like the mockup)
+          SECTION 1.A — HERO SLIDER
           ═══════════════════════════════════════════════════════════════ */}
-      <section
-        ref={heroRef}
-        className="relative min-h-[90vh] flex items-center overflow-hidden"
-      >
-        <BackgroundBeamsWithCollision className="min-h-[90vh] w-full">
-          {/* Background pattern */}
-          <div className="absolute inset-0 bg-gradient-to-bl from-muted/40 via-background to-background -z-10" />
-          <div className="absolute inset-0 opacity-[0.03] -z-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-
-          <motion.div style={{ opacity: heroOpacity }} className="container relative z-10 mx-auto px-4 py-20 lg:py-0">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mt-8 lg:mt-0">
-            {/* Text side */}
-            <div className="order-2 lg:order-1">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.15em] uppercase text-primary bg-primary/10 rounded-full px-4 py-2 mb-6"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                طابعات ومستلزمات طباعة احترافية
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-[1.2] mb-6 text-balance"
-              >
-                طابعات ومستلزمات
-                <br />
-                <span className="bg-gradient-to-l from-red-600 to-rose-500 bg-clip-text text-transparent">
-                  بأعلى جودة
-                </span>
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg"
-              >
-                سواء كنت تدير مكتباً صغيراً أو مؤسسة كبيرة، روايال إنك شريكك
-                في توفير مستلزمات طباعة عالية الجودة ومتوافقة مع أبرز الطابعات
-                العالمية.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="flex items-center gap-4 flex-wrap"
-              >
-                <Link
-                  href="/contact"
-                  className="bg-primary text-white px-8 py-3.5 rounded-full font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 text-sm"
-                >
-                  تواصل معنا
-                </Link>
-                <Link
-                  href="/about"
-                  className="border border-border/60 text-foreground px-8 py-3.5 rounded-full font-semibold hover:bg-muted/50 transition-all hover:-translate-y-0.5 text-sm"
-                >
-                  تعرف علينا
-                </Link>
-              </motion.div>
-
-              {/* Certification Logo Cloud */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                <LogoCloudCerts />
-              </motion.div>
-            </div>
-
-            {/* Image side */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="order-1 lg:order-2 relative"
-            >
-              <div className="relative rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/10 border border-border/30">
-                <Image
-                  src="/images/ink-cartridges.jpg"
-                  alt="مستلزمات طباعة روايال إنك"
-                  width={700}
-                  height={500}
-                  className="object-cover w-full h-[350px] md:h-[450px]"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                {/* Floating logo badge */}
-                <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
-                  <img
-                    src="/images/logo.svg"
-                    alt="Royal Ink"
-                    className="h-7 object-contain"
-                  />
-                </div>
-              </div>
-              {/* Decorative floating element */}
-              <div className="absolute -top-4 -left-4 w-20 h-20 rounded-2xl bg-primary/10 -z-10" />
-              <div className="absolute -bottom-4 -right-4 w-32 h-32 rounded-full bg-rose-500/5 -z-10" />
-            </motion.div>
-          </div>
-        </motion.div>
-        </BackgroundBeamsWithCollision>
-      </section>
+      <HeroSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1.5 — ASSOCIATED BRANDS SLIDER
+          SECTION 1.B — CATEGORIES ROW
+          ═══════════════════════════════════════════════════════════════ */}
+      <CategoriesRow />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 1.C — BRANDS INFINITE SLIDER (no text)
           ═══════════════════════════════════════════════════════════════ */}
       <BrandsSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1.8 — SMART COMPATIBILITY DIRECTORY TEASER
+          SECTION 2 — COMPATIBILITY SEARCH TEASER (Red Background)
           ═══════════════════════════════════════════════════════════════ */}
       <CompatibilityTeaserSection />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 2 — FEATURE HIGHLIGHT (split, reversed)
+          SECTION 3 — MAP: CLIENTS & POINTS OF SALE
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-muted/20 overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center max-w-6xl mx-auto">
-            {/* Image side */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.7 }}
-              className="relative"
-            >
-              <div className="relative rounded-[2rem] overflow-hidden shadow-xl border border-border/30">
-                <Image
-                  src="/images/ri1.jpg"
-                  alt="طابعات متينة وعالية الجودة"
-                  width={600}
-                  height={450}
-                  className="object-cover w-full h-[240px] md:h-[400px]"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-l from-black/20 to-transparent" />
-                <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg">
-                  <img
-                    src="/images/logo.svg"
-                    alt="Royal Ink"
-                    className="h-6 object-contain"
-                  />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Text side */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-            >
-              <div className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.15em] uppercase text-blue-600 bg-blue-50 dark:bg-blue-500/10 rounded-full px-4 py-2 mb-6">
-                <PackageCheck className="w-3.5 h-3.5" />
-                المتانة والجودة
-              </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold mb-6 leading-tight text-balance">
-                صُنعت من أجل
-                <br />
-                <span className="text-primary">المتانة والأداء</span>
-              </h2>
-              <p className="text-muted-foreground leading-relaxed mb-8 text-base md:text-lg">
-                منتجاتنا مصمّمة ومختبرة بعناية لتوفير وضوح طباعة مماثل
-                للمنتجات الأصلية، مع عمر افتراضي أطول وكفاءة أعلى في
-                الاستخدام. نختار شركاءنا من المصانع العالمية التي تلتزم بأعلى
-                معايير الجودة.
-              </p>
-              <div className="flex flex-col gap-3">
-                {[
-                  "دقة ألوان عالية ووضوح مطبوعات",
-                  "توافق مدروس مع الطابعات الرائدة",
-                  "اختبار جودة لكل دفعة إنتاج",
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">
-                      {item}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+      <StoreLocatorSection />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 3 — STATS BAR
+          SECTION 4 — CERTIFICATES INFINITE SLIDER
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative py-16 md:py-20 overflow-hidden gradient-bg text-white">
-        <div className="absolute inset-0 bg-black/10" />
-        <div className="container relative z-10 mx-auto px-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 max-w-5xl mx-auto">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center"
-              >
-                <span className="block text-4xl md:text-5xl lg:text-6xl font-light tracking-tight mb-2">
-                  <AnimatedCounter
-                    target={stat.value}
-                    suffix={stat.suffix}
-                  />
-                </span>
-                <span className="text-sm text-white/70 font-medium">
-                  {stat.label}
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <CertificatesSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 4 — COMMITMENT / VALUES (split: text + grid)
+          SECTION 5 — TARGET CLIENTS
+          ═══════════════════════════════════════════════════════════════ */}
+      <ClientSegments />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECTION 6 — OUR COMMITMENT / VALUES
           ═══════════════════════════════════════════════════════════════ */}
       <section className="py-24 md:py-32">
         <div className="container mx-auto px-4">
@@ -544,141 +267,6 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5 — PRODUCTS CAROUSEL
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="flex items-center justify-center gap-4 mb-4"
-            >
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/40" />
-              <span className="text-sm font-bold tracking-[0.2em] uppercase text-primary">
-                منتجاتنا
-              </span>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/40" />
-            </motion.div>
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-3xl md:text-4xl font-extrabold mb-4"
-            >
-              مجالات عملنا ومنتجاتنا
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-muted-foreground text-lg max-w-2xl mx-auto"
-            >
-              تلبية متطلبات العمل المكتبي من إعداد الوثائق إلى طباعتها
-              بأفضل جودة
-            </motion.p>
-          </div>
-          <SqueezeCarouselDemo />
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5.5 — CLIENT SEGMENTS
-          ═══════════════════════════════════════════════════════════════ */}
-      <ClientSegments />
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5.7 — STORE LOCATOR MAP
-          ═══════════════════════════════════════════════════════════════ */}
-      <StoreLocatorSection />
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 6 — BRIEF STORY TIMELINE
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 md:py-32 overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="flex items-center justify-center gap-4 mb-4"
-            >
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/40" />
-              <span className="text-sm font-bold tracking-[0.2em] uppercase text-primary">
-                مسيرتنا
-              </span>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/40" />
-            </motion.div>
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-3xl md:text-4xl font-extrabold mb-4"
-            >
-              من الورشة إلى العلامة الوطنية
-            </motion.h2>
-          </div>
-
-          {/* Horizontal mini-timeline */}
-          <div className="max-w-5xl mx-auto relative">
-            {/* Connection line (dashed, starts/ends exactly at the center of the first/last items) */}
-            <div className="hidden md:block absolute top-[42px] right-[10%] left-[10%] border-t-2 border-dashed border-primary/30 z-0" />
-
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-10 md:gap-4">
-              {[
-                { year: "2007", title: "البداية الأولى", icon: <Printer className="w-4 h-4" />, desc: "ورشة طباعة منزلية صغيرة" },
-                { year: "2011", title: "ورشة متخصصة", icon: <Building2 className="w-4 h-4" />, desc: "تقنيات طباعة احترافية متعددة" },
-                { year: "2012", title: "استيراد المستلزمات", icon: <Truck className="w-4 h-4" />, desc: "استيراد مستلزمات الإعلام الآلي والطباعة" },
-                { year: "2017", title: "وكالة إشهار", icon: <Sparkles className="w-4 h-4" />, desc: "حلول إبداعية وطباعية متكاملة" },
-                { year: "2022", title: "روايال إنك", icon: <PackageCheck className="w-4 h-4" />, desc: "تأسيس العلامة والشركة" },
-              ].map((item, i) => (
-                <motion.div
-                  key={item.year}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.12, duration: 0.5 }}
-                  className="relative text-center group"
-                >
-                  {/* Dot on timeline */}
-                  <div className="hidden md:flex w-12 h-12 mx-auto mb-5 rounded-full bg-background border-2 border-primary/20 shadow-sm items-center justify-center z-10 relative group-hover:bg-primary group-hover:border-primary group-hover:text-white group-hover:shadow-md group-hover:-translate-y-1 text-primary transition-all duration-300">
-                    {item.icon}
-                  </div>
-                  <span className="inline-block text-xs font-bold text-primary bg-primary/10 rounded-full px-3 py-1 mb-2">
-                    {item.year}
-                  </span>
-                  <h3 className="text-sm font-bold mb-1">{item.title}</h3>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Link to full timeline */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5 }}
-            className="text-center mt-12"
-          >
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-            >
-              اكتشف قصتنا الكاملة
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
           SECTION 7 — FAQ
           ═══════════════════════════════════════════════════════════════ */}
       <section className="py-24 bg-muted/20">
@@ -726,50 +314,6 @@ export default function Home() {
               ))}
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 8 — CTA
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 gradient-bg text-white text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10" />
-        {/* Decorative blurs */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="container relative z-10 mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-          >
-            <h2 className="text-3xl md:text-5xl font-extrabold mb-6 drop-shadow-md leading-tight text-balance">
-              حلول الطباعة للمهنيين
-              <br />
-              والمؤسسات
-            </h2>
-            <p className="text-lg md:text-xl mb-10 text-white/80 max-w-2xl mx-auto leading-relaxed">
-              روايال إنك توفر طابعات ومستلزمات طباعة عالية الجودة وبأسعار
-              تنافسية في الجزائر. فريقنا جاهز لمساعدتكم.
-            </p>
-            <div className="flex items-center justify-center gap-4 flex-wrap">
-              <Link
-                href="/contact"
-                className="bg-white text-primary px-10 py-4 rounded-full font-bold hover:bg-white/90 transition-all shadow-lg text-sm hover:-translate-y-0.5"
-              >
-                اطلب عرض سعر
-              </Link>
-              <a
-                href="tel:+213666509941"
-                className="border border-white/30 text-white px-8 py-4 rounded-full font-semibold hover:bg-white/10 transition-all text-sm hover:-translate-y-0.5 flex items-center gap-2"
-              >
-                <Phone className="w-4 h-4" />
-                <span dir="ltr">+213 666 50 99 41</span>
-              </a>
-            </div>
-          </motion.div>
         </div>
       </section>
     </div>

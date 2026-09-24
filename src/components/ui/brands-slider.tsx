@@ -136,18 +136,8 @@ const BRANDS: BrandItem[] = [
 
 export function BrandsSlider() {
   return (
-    <section className="py-10 md:py-14 overflow-hidden relative">
+    <section className="pt-2 pb-8 md:pt-3 md:pb-10 overflow-hidden relative">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-8">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-            توافق مع أبرز العلامات العالمية
-          </h2>
-          <p className="text-xs md:text-sm text-muted-foreground mt-2 leading-relaxed">
-            مستلزمات طباعة متطابقة ومصممة بأعلى معايير الدقة لتعمل بسلاسة مع أشهر الطابعات في العالم
-          </p>
-        </div>
-
         {/* Free Floating Slider: clean without borders, strictly inside website container */}
         <div className="relative w-full overflow-hidden">
           {/* Edge gradient masks for seamless fade out inside the container boundaries */}
@@ -158,8 +148,8 @@ export function BrandsSlider() {
           <div dir="ltr" className="w-full">
             <InfiniteSlider
               gap={36}
-              duration={55}
-              durationOnHover={90}
+              speed={28}
+              speedOnHover={14}
               className="w-full py-4"
             >
               {BRANDS.map((brand) => (

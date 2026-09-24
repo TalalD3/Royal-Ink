@@ -106,6 +106,19 @@ export async function DELETE(req: NextRequest) {
     );
   }
 
+  if (id === "all") {
+    const { error } = await supabaseAdmin
+      .from("distributors")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: "All distributors deleted" });
+  }
+
   const { error } = await supabaseAdmin
     .from("distributors")
     .delete()

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { AdminProductsManager } from "@/components/admin/admin-products-manager";
 import { AdminDistributorsManager } from "@/components/admin/admin-distributors-manager";
+import { AdminSlidesManager } from "@/components/admin/admin-slides-manager";
 import {
   Printer,
   MapPin,
@@ -13,11 +14,12 @@ import {
   ExternalLink,
   Loader2,
   ShieldCheck,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"products" | "distributors">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "distributors" | "slides">("products");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -139,6 +141,18 @@ export default function AdminDashboardPage() {
             <MapPin className="w-3.5 h-3.5" />
             <span>نقاط البيع</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab("slides")}
+            className={`flex items-center gap-1.5 px-4 py-2.5 border-b-2 text-[12px] font-semibold transition-colors cursor-pointer ${
+              activeTab === "slides"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>شرائح الواجهة</span>
+          </button>
         </div>
       </header>
 
@@ -146,8 +160,10 @@ export default function AdminDashboardPage() {
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 pt-5">
         {activeTab === "products" ? (
           <AdminProductsManager />
-        ) : (
+        ) : activeTab === "distributors" ? (
           <AdminDistributorsManager />
+        ) : (
+          <AdminSlidesManager />
         )}
       </main>
     </div>
