@@ -1,7 +1,13 @@
 'use client';
 import { cn } from '@/lib/utils';
 import { useMotionValue, animate, motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useState,
+  useEffect,
+} from 'react';
 import useMeasure from 'react-use-measure';
 
 type InfiniteSliderProps = {
@@ -128,7 +134,17 @@ export function InfiniteSlider({
         {...hoverProps}
       >
         {children}
-        {children}
+        {/* The second run only exists to make the loop seamless. It must stay
+            hoverable and clickable like the first, so it is only hidden from
+            screen readers and taken out of the tab order (each top-level item
+            receives tabIndex -1) */}
+        <div className='contents' aria-hidden='true'>
+          {Children.map(children, (child) =>
+            isValidElement<{ tabIndex?: number }>(child)
+              ? cloneElement(child, { tabIndex: -1 })
+              : child
+          )}
+        </div>
       </motion.div>
     </div>
   );

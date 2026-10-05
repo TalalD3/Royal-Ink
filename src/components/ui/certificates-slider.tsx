@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { InfiniteSlider } from "@/components/ui/infinite-slider";
-import { ChevronLeft, Award } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import { LogoShape } from "@/components/ui/certificates-explorer";
 
 /* ── Certificate items (referencing existing SVGs) ── */
 interface CertItem {
@@ -12,119 +13,82 @@ interface CertItem {
   sizeClass: string;
 }
 
+const LOGO = "h-10 w-16 sm:h-14 sm:w-[110px] md:h-16";
+
 const CERTS: CertItem[] = [
-  {
-    id: "iso-9001",
-    name: "ISO 9001",
-    logo: "/images/certificate/Artboard 3.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
-  {
-    id: "iso-14001",
-    name: "ISO 14001",
-    logo: "/images/certificate/Artboard 7.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
-  {
-    id: "reach",
-    name: "REACH",
-    logo: "/images/certificate/Artboard 1.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
-  {
-    id: "rohs",
-    name: "RoHS",
-    logo: "/images/certificate/Artboard 6.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
-  {
-    id: "ce",
-    name: "CE",
-    logo: "/images/certificate/ce.svg",
-    sizeClass: "h-8 md:h-10 max-w-[60px]",
-  },
-  {
-    id: "stmc",
-    name: "STMC",
-    logo: "/images/certificate/Artboard 4.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
-  {
-    id: "sgs",
-    name: "SGS",
-    logo: "/images/certificate/Artboard 5.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
-  {
-    id: "tuv",
-    name: "TÜV",
-    logo: "/images/certificate/Artboard 8.svg",
-    sizeClass: "h-10 md:h-12 max-w-[100px]",
-  },
+  { id: "iso-9001", name: "ISO 9001", logo: "/images/certificate/Artboard 3.svg", sizeClass: LOGO },
+  { id: "iso-14001", name: "ISO 14001", logo: "/images/certificate/Artboard 7.svg", sizeClass: LOGO },
+  { id: "reach", name: "REACH", logo: "/images/certificate/Artboard 1.svg", sizeClass: LOGO },
+  { id: "rohs", name: "RoHS", logo: "/images/certificate/Artboard 6.svg", sizeClass: LOGO },
+  { id: "ce", name: "CE", logo: "/images/certificate/ce.svg", sizeClass: "h-7 w-14 sm:h-10 sm:w-20 md:h-11" },
+  { id: "stmc", name: "STMC", logo: "/images/certificate/Artboard 8.svg", sizeClass: "h-9 w-16 sm:h-12 sm:w-[110px] md:h-14" },
+  { id: "sgs", name: "SGS", logo: "/images/certificate/Artboard 5.svg", sizeClass: LOGO },
+  { id: "gmc", name: "GMC", logo: "/images/certificate/Artboard 4.svg", sizeClass: LOGO },
 ];
 
 export function CertificatesSlider() {
   return (
-    <section className="py-10 md:py-14 overflow-hidden relative bg-muted/20">
+    <section className="bg-white py-16 md:py-24">
       <div className="container mx-auto px-4">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10">
-          <span className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.1em] text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-3.5 shadow-sm">
-            <Award className="w-3.5 h-3.5 text-primary" />
-            معتمدون دولياً
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-foreground tracking-tight leading-snug">
-            شهادات الجودة والمطابقة العالمية
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mt-2.5 max-w-2xl mx-auto">
-            تخضع جميع منتجات روايال إنك لأدق معايير الفحص والسلامة البيئية، وحاصلة على كبرى اعتمادات الجودة العالمية لضمان أعلى درجات الأداء والموثوقية.
-          </p>
-        </div>
-
-        {/* Slider + Interactive hover overlay */}
-        <Link
-          href="/quality"
-          className="group relative block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
-        >
-          {/* Hover overlay — white blur + CTA text */}
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 bg-background/75 backdrop-blur-sm pointer-events-none">
-            <div className="flex items-center gap-2 text-sm font-bold text-primary">
-              <ChevronLeft className="w-5 h-5" />
+        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <p className="ri-eyebrow mb-4">معتمدون دولياً</p>
+            <h2 className="ri-h2">شهادات الجودة والمطابقة العالمية</h2>
+            {/* Phones skip the paragraph — the logos say it */}
+            <p className="ri-lead mt-5 hidden sm:block">
+              تخضع جميع منتجات روايال إنك لأدق معايير الفحص والسلامة البيئية،
+              وحاصلة على كبرى اعتمادات الجودة العالمية لضمان أعلى درجات الأداء
+              والموثوقية.
+            </p>
+            <Link href="/quality" className="ri-link mt-7 hidden lg:inline-flex">
               <span>اكتشف شهاداتنا الكاملة</span>
-            </div>
-          </div>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </motion.div>
 
-          {/* Slider area */}
-          <div className="relative w-full overflow-hidden transition-all duration-500 group-hover:opacity-30 group-hover:blur-sm">
-            {/* Edge gradient masks */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-20 md:w-28 bg-gradient-to-r from-muted/60 via-muted/40 to-transparent z-10" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-20 md:w-28 bg-gradient-to-l from-muted/60 via-muted/40 to-transparent z-10" />
-
-            {/* LTR wrapper for stable animation */}
-            <div dir="ltr" className="w-full">
-              <InfiniteSlider
-                gap={48}
-                speed={28}
-                speedOnHover={14}
-                className="w-full py-4"
-              >
-                {CERTS.map((cert) => (
-                  <div
-                    key={cert.id}
-                    className="flex h-14 md:h-16 w-28 md:w-36 shrink-0 items-center justify-center select-none"
-                  >
-                    <img
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
+          >
+            {/* Certificates — a ruled sheet, four across at every size; on
+                phones it shows the logos only (each name is on its logo).
+                Hovering a logo turns it red, as on the quality page. */}
+            <ul className="grid grid-cols-4 border-s border-t border-brand-line">
+              {CERTS.map((cert) => (
+                <li
+                  key={cert.id}
+                  className="group flex flex-col items-center justify-center gap-4 border-b border-e border-brand-line px-2 py-5 text-brand-black sm:px-4 sm:py-8"
+                >
+                  <span className="flex h-10 items-center justify-center sm:h-16">
+                    <LogoShape
                       src={cert.logo}
-                      alt={`${cert.name} certification`}
-                      loading="lazy"
-                      className={`w-auto object-contain opacity-75 ${cert.sizeClass}`}
+                      className={`${cert.sizeClass} group-hover:text-brand-red`}
                     />
-                  </div>
-                ))}
-              </InfiniteSlider>
-            </div>
-          </div>
-        </Link>
+                  </span>
+                  <span
+                    dir="ltr"
+                    className="sr-only text-xs font-bold tracking-wide text-brand-gray transition-colors duration-200 group-hover:text-brand-red sm:not-sr-only"
+                  >
+                    {cert.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <Link href="/quality" className="ri-link mt-7 lg:hidden">
+              <span>اكتشف شهاداتنا الكاملة</span>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

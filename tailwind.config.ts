@@ -26,6 +26,23 @@ const config = {
         ink: "var(--ink)",
         paper: "var(--paper)",
         line: "var(--line)",
+        /* Logo palette — sampled from /images/logo.svg, alpha-capable */
+        brand: {
+          black: "rgb(var(--brand-black) / <alpha-value>)",
+          red: {
+            DEFAULT: "rgb(var(--brand-red) / <alpha-value>)",
+            dark: "rgb(var(--brand-red-dark) / <alpha-value>)",
+          },
+          mist: "rgb(var(--brand-mist) / <alpha-value>)",
+          line: "rgb(var(--brand-line) / <alpha-value>)",
+          gray: "rgb(var(--brand-gray) / <alpha-value>)",
+        },
+        /* Process inks (CMYK) — K is brand.black */
+        cmyk: {
+          c: "rgb(var(--cmyk-c) / <alpha-value>)",
+          m: "rgb(var(--cmyk-m) / <alpha-value>)",
+          y: "rgb(var(--cmyk-y) / <alpha-value>)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

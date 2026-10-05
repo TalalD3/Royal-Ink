@@ -11,6 +11,7 @@ export const initialProducts: Product[] = [
     color: "black",
     compatiblePrinters: ["HP LaserJet Pro P1102"],
     notes: "طابعة ليزرية شخصية ومكتبية أحادية اللون، سرعة طباعة تصل إلى 18 صفحة/دقيقة، متوافقة تماماً مع خراطيش HP 85A (CE285A)",
+    specs: { printMode: "mono", technology: "laser", speedPpm: "18", resolution: "600 × 600 dpi", paperSize: "A4", duplex: "no", connectivity: "USB 2.0", compatibleSupply: "HP 85A (CE285A)" },
     isActive: true,
   },
   {
@@ -22,6 +23,7 @@ export const initialProducts: Product[] = [
     color: "black",
     compatiblePrinters: ["HP LaserJet Pro M404dn"],
     notes: "طابعة ليزر أعمال عالية الأداء، سرعة 38 صفحة/دقيقة مع دوبلكس وشبكة إيثرنت، تدعم خراطيش HP 59A (CF259A) و 59X",
+    specs: { printMode: "mono", technology: "laser", speedPpm: "38", resolution: "1200 × 1200 dpi", paperSize: "A4", duplex: "yes", connectivity: "USB 2.0, Ethernet", compatibleSupply: "HP 59A (CF259A)" },
     isActive: true,
   },
   {
@@ -33,6 +35,7 @@ export const initialProducts: Product[] = [
     color: "black",
     compatiblePrinters: ["Canon i-SENSYS LBP6030B", "Canon i-SENSYS LBP6030"],
     notes: "طابعة ليزرية أحادية اللون مدمجة وموفرة للمساحة والطاقة، متوافقة مع خرطوشة Canon 725 (CRG-725)",
+    specs: { printMode: "mono", technology: "laser", speedPpm: "18", resolution: "600 × 600 dpi", paperSize: "A4", duplex: "no", connectivity: "USB 2.0", compatibleSupply: "Canon 725 (CRG-725)" },
     isActive: true,
   },
   {
@@ -44,6 +47,7 @@ export const initialProducts: Product[] = [
     color: "multi",
     compatiblePrinters: ["Epson EcoTank L3150"],
     notes: "طابعة خزان حبر ذكية 3 في 1 (طباعة، مسح، نسخ) مع اتصال Wi-Fi، تدعم عبوات حبر Epson 103 بألوانها الأربعة",
+    specs: { printMode: "color", technology: "inkjet", speedPpm: "10", resolution: "5760 × 1440 dpi", paperSize: "A4", duplex: "no", connectivity: "USB 2.0, Wi-Fi, Wi-Fi Direct", compatibleSupply: "Epson 103" },
     isActive: true,
   },
   {
@@ -55,6 +59,7 @@ export const initialProducts: Product[] = [
     color: "black",
     compatiblePrinters: ["Brother DCP-L2540DW"],
     notes: "طابعة ليزر مدمجة 3 في 1 مع تغذية آلية للمستندات ADF، طباعة على الوجهين وشبكة لاسلكية، متوافقة مع تونر Brother TN-2305 ودرام DR-2305",
+    specs: { printMode: "mono", technology: "laser", speedPpm: "30", resolution: "2400 × 600 dpi", paperSize: "A4", duplex: "yes", connectivity: "USB 2.0, Ethernet, Wi-Fi", compatibleSupply: "Brother TN-2305, DR-2305" },
     isActive: true,
   },
   {
@@ -66,6 +71,7 @@ export const initialProducts: Product[] = [
     color: "black",
     compatiblePrinters: ["Pantum P2500W"],
     notes: "طابعة ليزر اقتصادية مدمجة مع واي فاي وتطبيق للهواتف، متوافقة مع خراطيش Pantum PC-210EV",
+    specs: { printMode: "mono", technology: "laser", speedPpm: "22", resolution: "1200 × 1200 dpi", paperSize: "A4", duplex: "no", connectivity: "USB 2.0, Wi-Fi", compatibleSupply: "Pantum PC-211EV" },
     isActive: true,
   },
 
@@ -86,6 +92,7 @@ export const initialProducts: Product[] = [
       "HP LaserJet Pro P1100",
     ],
     notes: "إنتاجية قياسية 1600 صفحة بتغطية 5% — سواد داكن ونصوص فائقة الوضوح",
+    specs: { oemRef: "CE285A", yieldPages: "1600", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -101,6 +108,7 @@ export const initialProducts: Product[] = [
       "HP LaserJet Pro M1536dnf MFP",
     ],
     notes: "إنتاجية 2100 صفحة",
+    specs: { oemRef: "CE278A", yieldPages: "2100", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -118,6 +126,7 @@ export const initialProducts: Product[] = [
       "HP LaserJet P2055dn",
     ],
     notes: "إنتاجية عالية 2700 صفحة ملائمة للشركات والمكاتب",
+    specs: { oemRef: "CE505A", yieldPages: "2700", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -136,6 +145,7 @@ export const initialProducts: Product[] = [
       "HP LaserJet Pro MFP M426fdw",
     ],
     notes: "تقنية متطورة وإنتاجية 3100 صفحة",
+    specs: { oemRef: "CF226A", yieldPages: "3100", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -154,6 +164,7 @@ export const initialProducts: Product[] = [
       "HP LaserJet Pro MFP M428fdw",
     ],
     notes: "جيل جديد سريع وسلس، إنتاجية 3000 صفحة",
+    specs: { oemRef: "CF259A", yieldPages: "3000", coverage: "5", technology: "laser" },
     isActive: true,
   },
 
@@ -174,6 +185,7 @@ export const initialProducts: Product[] = [
       "Canon i-SENSYS MF3010",
     ],
     notes: "أكثر الموديلات طلباً لطابعات كانون الأكثر انتشاراً في الجزائر، 1600 صفحة",
+    specs: { oemRef: "CRG-725", yieldPages: "1600", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -198,6 +210,7 @@ export const initialProducts: Product[] = [
       "Canon i-SENSYS MF249dw",
     ],
     notes: "إنتاجية 2400 صفحة",
+    specs: { oemRef: "CRG-737", yieldPages: "2400", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -217,6 +230,7 @@ export const initialProducts: Product[] = [
       "Canon i-SENSYS MF449x",
     ],
     notes: "إنتاجية 3100 صفحة لأجهزة كانون المتعددة المهام الحديثة",
+    specs: { oemRef: "CRG-057", yieldPages: "3100", coverage: "5", technology: "laser" },
     isActive: true,
   },
 
@@ -243,6 +257,7 @@ export const initialProducts: Product[] = [
       "Brother MFC-L2740DW",
     ],
     notes: "إنتاجية 2600 صفحة لطابعات براذر الليزرية",
+    specs: { oemRef: "TN-2305", yieldPages: "2600", coverage: "5", technology: "laser" },
     isActive: true,
   },
   {
@@ -259,6 +274,7 @@ export const initialProducts: Product[] = [
       "Brother MFC-L2700DW",
     ],
     notes: "أسطوانة تصوير عالية التحمل بعمر افتراضي حتى 12,000 صفحة",
+    specs: { oemRef: "DR-2305", yieldPages: "12000" },
     isActive: true,
   },
 
@@ -281,6 +297,7 @@ export const initialProducts: Product[] = [
       "Epson EcoTank L1110",
     ],
     notes: "حبر سائل فائق النقاء 65 مل — يطبع حتى 4500 صفحة دون انسداد للرؤوس",
+    specs: { capacityMl: "65", yieldPages: "4500", inkType: "dye", oemRef: "C13T00S14A" },
     isActive: true,
   },
   {
@@ -297,6 +314,7 @@ export const initialProducts: Product[] = [
       "Epson EcoTank L5190",
     ],
     notes: "حبر سائل 65 مل ألوان زاهية ومطابقة للأصل",
+    specs: { capacityMl: "65", yieldPages: "7500", inkType: "dye", oemRef: "C13T00S24A" },
     isActive: true,
   },
   {
@@ -313,6 +331,7 @@ export const initialProducts: Product[] = [
       "Epson EcoTank L5190",
     ],
     notes: "حبر سائل 65 مل ألوان زاهية",
+    specs: { capacityMl: "65", yieldPages: "7500", inkType: "dye", oemRef: "C13T00S34A" },
     isActive: true,
   },
   {
@@ -329,6 +348,7 @@ export const initialProducts: Product[] = [
       "Epson EcoTank L5190",
     ],
     notes: "حبر سائل 65 مل",
+    specs: { capacityMl: "65", yieldPages: "7500", inkType: "dye", oemRef: "C13T00S44A" },
     isActive: true,
   },
 
@@ -346,6 +366,7 @@ export const initialProducts: Product[] = [
       "Kyocera ECOSYS M2640idw",
     ],
     notes: "إنتاجية ضخمة 7200 صفحة لأجهزة كواسيرا الشاقة",
+    specs: { oemRef: "TK-1170", yieldPages: "7200", coverage: "5", technology: "laser" },
     isActive: true,
   },
 
@@ -366,6 +387,7 @@ export const initialProducts: Product[] = [
       "Pantum M6600NW",
     ],
     notes: "إنتاجية 1600 صفحة مع شريحة ذكية متوافقة",
+    specs: { oemRef: "PC-211EV", yieldPages: "1600", coverage: "5", technology: "laser" },
     isActive: true,
   },
 ];

@@ -3,172 +3,45 @@
 import Image from "next/image";
 import { InfiniteSlider } from "@/components/ui/infinite-slider";
 import { cn } from "@/lib/utils";
+import { BRAND_LOGOS, BRAND_SLIDER_ORDER } from "@/data/brand-logos";
 
-interface BrandItem {
-  id: string;
-  name: string;
-  logo: string;
-  sizeClass: string;
-}
-
-const BRANDS: BrandItem[] = [
-  {
-    id: "canon",
-    name: "Canon",
-    logo: "/images/Brands/canon.png",
-    sizeClass: "h-6 md:h-7 max-w-[95px]",
-  },
-  {
-    id: "epson",
-    name: "Epson",
-    logo: "/images/Brands/epson.png",
-    sizeClass: "h-6 md:h-7 max-w-[100px]",
-  },
-  {
-    id: "brother",
-    name: "Brother",
-    logo: "/images/Brands/brother.webp",
-    sizeClass: "h-6 md:h-7 max-w-[105px]",
-  },
-  {
-    id: "hp",
-    name: "HP",
-    logo: "/images/Brands/HP.svg",
-    sizeClass: "h-9 md:h-10 max-w-[42px]",
-  },
-  {
-    id: "kyocera",
-    name: "Kyocera",
-    logo: "/images/Brands/kyocera.svg",
-    sizeClass: "h-6 md:h-7 max-w-[95px]",
-  },
-  {
-    id: "dell",
-    name: "Dell",
-    logo: "/images/Brands/Dell_(1989).svg",
-    sizeClass: "h-6 md:h-7 max-w-[95px]",
-  },
-  {
-    id: "samsung",
-    name: "Samsung",
-    logo: "/images/Brands/Samsung.png",
-    sizeClass: "h-6 md:h-7 max-w-[100px]",
-  },
-  {
-    id: "ricoh",
-    name: "Ricoh",
-    logo: "/images/Brands/ricoh.png",
-    sizeClass: "h-5 md:h-6 max-w-[110px]",
-  },
-  {
-    id: "xerox",
-    name: "Xerox",
-    logo: "/images/Brands/xerox.png",
-    sizeClass: "h-6 md:h-7 max-w-[100px]",
-  },
-  {
-    id: "oki",
-    name: "OKI",
-    logo: "/images/Brands/Oki_logo.svg",
-    sizeClass: "h-6 md:h-7 max-w-[95px]",
-  },
-  {
-    id: "lexmark",
-    name: "Lexmark",
-    logo: "/images/Brands/Lexmark-primary-logo.svg",
-    sizeClass: "h-5 md:h-6 max-w-[115px]",
-  },
-  {
-    id: "sharp",
-    name: "Sharp",
-    logo: "/images/Brands/sharp.svg",
-    sizeClass: "h-4 md:h-5 max-w-[115px]",
-  },
-  {
-    id: "panasonic",
-    name: "Panasonic",
-    logo: "/images/Brands/panasonic.png",
-    sizeClass: "h-5.5 md:h-6.5 max-w-[105px]",
-  },
-  {
-    id: "pantum",
-    name: "Pantum",
-    logo: "/images/Brands/pantum.png",
-    sizeClass: "h-4 md:h-4.5 max-w-[125px]",
-  },
-  {
-    id: "deli",
-    name: "Deli",
-    logo: "/images/Brands/deli-seeklogo.svg",
-    sizeClass: "h-6 md:h-7 max-w-[85px]",
-  },
-  {
-    id: "lenovo",
-    name: "Lenovo",
-    logo: "/images/Brands/lenovo.svg",
-    sizeClass: "h-6 md:h-7 max-w-[90px]",
-  },
-  {
-    id: "konica-minolta",
-    name: "Konica Minolta",
-    logo: "/images/Brands/konica%20minolta.svg",
-    sizeClass: "h-5.5 md:h-6.5 max-w-[110px]",
-  },
-  {
-    id: "dascom",
-    name: "Tally Dascom",
-    logo: "/images/Brands/dascom.webp",
-    sizeClass: "h-4 md:h-4.5 max-w-[120px]",
-  },
-  {
-    id: "diebold-nixdorf",
-    name: "Diebold Nixdorf",
-    logo: "/images/Brands/Diebold_Nixdorf.svg",
-    sizeClass: "h-9 md:h-10 max-w-[55px]",
-  },
-  {
-    id: "printronix",
-    name: "Printronix",
-    logo: "/images/Brands/printronix.svg",
-    sizeClass: "h-4.5 md:h-5 max-w-[115px]",
-  },
-];
+const BRANDS = BRAND_SLIDER_ORDER.map((id) => ({ id, ...BRAND_LOGOS[id] }));
 
 export function BrandsSlider() {
   return (
-    <section className="pt-2 pb-8 md:pt-3 md:pb-10 overflow-hidden relative">
+    <section className="border-y border-brand-line bg-white py-8 md:py-9">
       <div className="container mx-auto px-4">
-        {/* Free Floating Slider: clean without borders, strictly inside website container */}
-        <div className="relative w-full overflow-hidden">
-          {/* Edge gradient masks for seamless fade out inside the container boundaries */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-12 sm:w-20 md:w-28 bg-gradient-to-r from-background via-background/80 to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-12 sm:w-20 md:w-28 bg-gradient-to-l from-background via-background/80 to-transparent z-10" />
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-10">
+          <p className="shrink-0 text-center text-sm font-bold leading-6 text-brand-black lg:w-52 lg:border-e lg:border-brand-line lg:pe-10 lg:text-start">
+            متوافقة مع أبرز علامات الطابعات العالمية
+          </p>
 
-          {/* LTR wrapper ensures mathematical animation coordinates are standard and jitter-free */}
-          <div dir="ltr" className="w-full">
-            <InfiniteSlider
-              gap={36}
-              speed={28}
-              speedOnHover={14}
-              className="w-full py-4"
-            >
-              {BRANDS.map((brand) => (
-                <div
-                  key={brand.id}
-                  className="flex h-14 md:h-16 w-32 md:w-40 shrink-0 items-center justify-center select-none"
-                >
-                  <img
-                    src={brand.logo}
-                    alt={`${brand.name} logo`}
-                    loading="lazy"
-                    className={cn(
-                      "w-auto object-contain transition-all duration-300 opacity-75 hover:opacity-100 hover:scale-110",
-                      brand.sizeClass
-                    )}
-                  />
-                </div>
-              ))}
-            </InfiniteSlider>
+          <div className="relative min-w-0 flex-1 overflow-hidden">
+            {/* Edge gradient masks for seamless fade out inside the container boundaries */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent sm:w-20" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent sm:w-20" />
+
+            {/* LTR wrapper ensures mathematical animation coordinates are standard and jitter-free */}
+            <div dir="ltr" className="w-full">
+              <InfiniteSlider gap={28} speed={24} speedOnHover={10} className="w-full">
+                {BRANDS.map((brand) => (
+                  <div
+                    key={brand.id}
+                    className="flex h-14 w-32 shrink-0 select-none items-center justify-center md:w-36"
+                  >
+                    <img
+                      src={brand.logo}
+                      alt={`${brand.name} logo`}
+                      loading="lazy"
+                      className={cn(
+                        "w-auto object-contain opacity-60 grayscale transition duration-300 hover:opacity-100 hover:grayscale-0",
+                        brand.sizeClass
+                      )}
+                    />
+                  </div>
+                ))}
+              </InfiniteSlider>
+            </div>
           </div>
         </div>
       </div>

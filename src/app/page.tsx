@@ -11,10 +11,7 @@ import {
   HeadphonesIcon,
   Truck,
   RotateCcw,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Phone,
+  Plus,
 } from "lucide-react";
 
 import { HeroSlider } from "@/components/ui/hero-slider";
@@ -26,7 +23,7 @@ import { CertificatesSlider } from "@/components/ui/certificates-slider";
 import { ClientSegments } from "@/components/ui/client-segments";
 
 /* ══════════════════════════════════════════════════════════════════════
-   FAQ ITEM — custom accordion with animation
+   FAQ ITEM — ruled accordion row
    ══════════════════════════════════════════════════════════════════════ */
 function FAQItem({
   question,
@@ -40,24 +37,32 @@ function FAQItem({
   onClick: () => void;
 }) {
   return (
-    <div className="border border-border/60 rounded-2xl overflow-hidden transition-all hover:border-primary/20">
+    <div className="border-b border-brand-black/15">
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between p-5 md:p-6 text-right bg-background hover:bg-muted/30 transition-colors"
+        className="group flex w-full items-center justify-between gap-6 py-6 text-right focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-red"
         aria-expanded={isOpen}
       >
-        <span className="text-sm md:text-base font-semibold text-foreground pr-4">
+        <span
+          className={`text-base font-bold leading-7 transition-colors duration-200 md:text-lg ${
+            isOpen
+              ? "text-brand-red"
+              : "text-brand-black group-hover:text-brand-red"
+          }`}
+        >
           {question}
         </span>
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center transition-transform duration-300">
-          {isOpen ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </div>
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center transition-all duration-300 ${
+            isOpen
+              ? "rotate-45 bg-brand-red text-white"
+              : "bg-brand-black text-white"
+          }`}
+        >
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
+        </span>
       </button>
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
@@ -66,9 +71,7 @@ function FAQItem({
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <p className="px-5 md:px-6 pb-5 md:pb-6 text-sm md:text-base text-muted-foreground leading-relaxed">
-              {answer}
-            </p>
+            <p className="ri-lead max-w-2xl pb-7">{answer}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -83,45 +86,39 @@ function FAQItem({
 const commitments = [
   {
     num: "01",
-    icon: <ShieldCheck className="w-5 h-5" />,
+    icon: <ShieldCheck className="h-6 w-6" strokeWidth={1.5} />,
     title: "جودة ثابتة",
     desc: "تبدأ العناية بجودة منتجاتنا أثناء التصنيع، حيث يسحب المصنع عينات عشوائية لاختبار وضوح المطبوعات ودقة الألوان.",
-    accent: "bg-primary",
   },
   {
     num: "02",
-    icon: <Target className="w-5 h-5" />,
+    icon: <Target className="h-6 w-6" strokeWidth={1.5} />,
     title: "خبرة تقنية وتوافق مدروس",
     desc: "تستند إلى خبرة تتجاوز 16 عاماً في مجال الطباعة لفهم احتياجات المستخدمين واختيار المستلزمات المناسبة.",
-    accent: "bg-blue-500",
   },
   {
     num: "03",
-    icon: <Leaf className="w-5 h-5" />,
+    icon: <Leaf className="h-6 w-6" strokeWidth={1.5} />,
     title: "مسؤولية بيئية",
     desc: "نهتم بالجوانب البيئية. عبواتنا تتضمن العلامات المطبوعة ISO 14001 و REACH و RoHS.",
-    accent: "bg-emerald-500",
   },
   {
     num: "04",
-    icon: <HeadphonesIcon className="w-5 h-5" />,
+    icon: <HeadphonesIcon className="h-6 w-6" strokeWidth={1.5} />,
     title: "دعم خبير",
     desc: "نساعد عملاءنا على تحديد المستلزم المناسب لطابعاتهم، ونقدم توجيهاً عملياً بشأن التوافق والاستخدام.",
-    accent: "bg-violet-500",
   },
   {
     num: "05",
-    icon: <Truck className="w-5 h-5" />,
+    icon: <Truck className="h-6 w-6" strokeWidth={1.5} />,
     title: "شبكة توزيع وطنية",
     desc: "تتوفر منتجات روايال إنك في أغلب ولايات الوطن عبر شبكة من الموزعين والوسطاء ونقاط البيع.",
-    accent: "bg-amber-500",
   },
   {
     num: "06",
-    icon: <RotateCcw className="w-5 h-5" />,
+    icon: <RotateCcw className="h-6 w-6" strokeWidth={1.5} />,
     title: "ثقة ومتابعة",
     desc: "نلتزم باستبدال المنتج ذي العيب الصناعي في اليوم نفسه ومتابعة ملاحظات عملائنا.",
-    accent: "bg-rose-500",
   },
 ];
 
@@ -153,112 +150,100 @@ const faqs = [
    ══════════════════════════════════════════════════════════════════════ */
 
 export default function Home() {
-  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
+  const [openFAQ, setOpenFAQ] = useState<number | null>(0);
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-white">
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1.A — HERO SLIDER
+          SECTION 1.A — HERO SLIDER (black block + red block)
           ═══════════════════════════════════════════════════════════════ */}
       <HeroSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1.B — CATEGORIES ROW
+          SECTION 1.B — PRODUCT CATEGORIES (white)
           ═══════════════════════════════════════════════════════════════ */}
       <CategoriesRow />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 1.C — BRANDS INFINITE SLIDER (no text)
+          SECTION 1.C — BRANDS INFINITE SLIDER (white, ruled)
           ═══════════════════════════════════════════════════════════════ */}
       <BrandsSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 2 — COMPATIBILITY SEARCH TEASER (Red Background)
+          SECTION 2 — COMPATIBILITY SEARCH TEASER (red block + black block)
           ═══════════════════════════════════════════════════════════════ */}
       <CompatibilityTeaserSection />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 3 — MAP: CLIENTS & POINTS OF SALE
+          SECTION 3 — MAP: CLIENTS & POINTS OF SALE (mist)
           ═══════════════════════════════════════════════════════════════ */}
       <StoreLocatorSection />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 4 — CERTIFICATES INFINITE SLIDER
+          SECTION 4 — CERTIFICATES (white)
           ═══════════════════════════════════════════════════════════════ */}
       <CertificatesSlider />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5 — TARGET CLIENTS
+          SECTION 5 — TARGET CLIENTS (black)
           ═══════════════════════════════════════════════════════════════ */}
       <ClientSegments />
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 6 — OUR COMMITMENT / VALUES
+          SECTION 6 — OUR COMMITMENT / VALUES (white)
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 md:py-32">
+      <section className="bg-white py-20 md:py-28">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-[1fr_1.5fr] gap-16 max-w-7xl mx-auto items-start">
-            {/* Left: commitment text */}
+          <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-20">
+            {/* Start: commitment text */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
               className="lg:sticky lg:top-28"
             >
-              <div className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.15em] uppercase text-primary bg-primary/10 rounded-full px-4 py-2 mb-6">
-                <Sparkles className="w-3.5 h-3.5" />
-                التزامنا
-              </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold mb-6 leading-tight">
-                التزام روايال إنك
-              </h2>
-              <p className="text-muted-foreground leading-relaxed mb-8">
+              <p className="ri-eyebrow mb-4">التزامنا</p>
+              <h2 className="ri-h2">التزام روايال إنك</h2>
+              <p className="ri-lead mt-5">
                 نؤمن بأن الجودة ليست خياراً بل التزام. منذ تأسيسنا، بنينا
                 سمعتنا على أسس متينة من الخبرة والثقة والابتكار المستمر لخدمة
                 عملائنا في كل ولايات الوطن.
               </p>
-              <Link
-                href="/about"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-              >
-                اقرأ المزيد عن قيمنا
-                <ArrowLeft className="w-4 h-4" />
+              <Link href="/about" className="ri-btn ri-btn-black mt-8">
+                <span>اقرأ المزيد عن قيمنا</span>
+                <ArrowLeft className="h-4 w-4" />
               </Link>
             </motion.div>
 
-            {/* Right: values grid */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            {/* End: values, as a ruled list */}
+            <div className="grid border-t border-brand-black sm:grid-cols-2 sm:gap-x-10">
               {commitments.map((c, i) => (
                 <motion.div
                   key={c.num}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08, duration: 0.5 }}
-                  className="relative rounded-2xl border border-border/50 p-6 bg-background group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ delay: (i % 2) * 0.08, duration: 0.5 }}
+                  className="border-b border-brand-line py-8"
                 >
-                  <div
-                    className={`absolute top-0 right-0 left-0 h-1 ${c.accent} scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-right`}
-                  />
-                  <div className="flex items-start gap-4">
-                    <span className="text-xs font-bold text-muted-foreground/40 mt-1">
+                  {/* Icon and title share one row; the text below lines up
+                      under the title */}
+                  <div className="flex items-center gap-3">
+                    <span className="shrink-0 text-brand-red">{c.icon}</span>
+                    <h3 className="min-w-0 flex-1 text-lg font-extrabold leading-7 text-brand-black">
+                      {c.title}
+                    </h3>
+                    <span
+                      dir="ltr"
+                      className="shrink-0 text-sm font-bold tabular-nums text-brand-black/30"
+                    >
                       {c.num}
                     </span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-foreground group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                          {c.icon}
-                        </div>
-                        <h3 className="text-sm font-bold text-foreground">
-                          {c.title}
-                        </h3>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {c.desc}
-                      </p>
-                    </div>
                   </div>
+                  <p className="mt-3 ps-9 text-[15px] leading-7 text-brand-gray">
+                    {c.desc}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -267,39 +252,42 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 7 — FAQ
+          SECTION 7 — FAQ (mist)
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="py-24 bg-muted/20">
+      <section className="bg-brand-mist py-20 md:py-28">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-[1fr_1.3fr] gap-12 max-w-6xl mx-auto items-start">
-            {/* Left: heading */}
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-20">
+            {/* Start: heading */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="lg:sticky lg:top-28"
             >
-              <div className="inline-flex items-center gap-2 text-xs font-bold tracking-[0.15em] uppercase text-primary bg-primary/10 rounded-full px-4 py-2 mb-6">
-                FAQ
-              </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold mb-4 leading-tight">
+              <p className="ri-eyebrow mb-4">الأسئلة الشائعة</p>
+              <h2 className="ri-h2">
                 كل ما تحتاج
                 <br />
                 معرفته
               </h2>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="ri-lead mt-5">
                 إجابات على الأسئلة الأكثر شيوعاً حول منتجات وخدمات روايال
                 إنك.
               </p>
+              <Link href="/contact" className="ri-link mt-7">
+                <span>لم تجد إجابتك؟ تواصل معنا</span>
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
             </motion.div>
 
-            {/* Right: accordion */}
+            {/* End: accordion */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="flex flex-col gap-3"
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+              className="border-t border-brand-black"
             >
               {faqs.map((faq, i) => (
                 <FAQItem
@@ -307,9 +295,7 @@ export default function Home() {
                   question={faq.q}
                   answer={faq.a}
                   isOpen={openFAQ === i}
-                  onClick={() =>
-                    setOpenFAQ(openFAQ === i ? null : i)
-                  }
+                  onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
                 />
               ))}
             </motion.div>

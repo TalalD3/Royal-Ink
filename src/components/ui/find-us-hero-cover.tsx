@@ -1,373 +1,254 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
-import { algeriaWilayas } from "@/data/algeria-wilayas";
+import { motion, useReducedMotion } from "framer-motion";
+import { algeriaWilayas, type WilayaData } from "@/data/algeria-wilayas";
+import { ALGERIA_NORTH_DOTS } from "@/data/algeria-dots";
 
 /* ══════════════════════════════════════════════════════════════════════
-   FIND US HERO COVER
-   
-   High-precision vector map of North Algeria showing Sétif as the
-   golden headquarters hub, with distribution arrows/rays radiating
-   out to other wilayas across Algeria.
-   
-   Fading effect:
-   - On mobile: positioned on top, fading at the bottom near the text.
-   - On desktop: positioned on the left, fading to the right near the text.
+   FIND US — HERO NETWORK
+
+   Northern Algeria drawn as a dot matrix on the black block. Red routes run
+   from the Sétif headquarters to every wilaya that has a point of sale
+   (live data), with small deliveries travelling along them.
    ══════════════════════════════════════════════════════════════════════ */
 
-// Trajectories shooting out from Sétif HQ (x: 663, y: 95.9)
-const distributionRays = [
-  {
-    id: "ray-algiers",
-    name: "الجزائر العاصمة",
-    code: 16,
-    x: 562.5,
-    y: 65.3,
-    cx: 610,
-    cy: 62,
-    dur: "2.3s",
-  },
-  {
-    id: "ray-oran",
-    name: "وهران",
-    code: 31,
-    x: 401.4,
-    y: 122.8,
-    cx: 520,
-    cy: 75,
-    dur: "2.8s",
-  },
-  {
-    id: "ray-constantine",
-    name: "قسنطينة",
-    code: 25,
-    x: 721.1,
-    y: 86.3,
-    cx: 695,
-    cy: 82,
-    dur: "1.9s",
-  },
-  {
-    id: "ray-annaba",
-    name: "عنابة",
-    code: 23,
-    x: 760.1,
-    y: 56.5,
-    cx: 715,
-    cy: 58,
-    dur: "2.4s",
-  },
-  {
-    id: "ray-bejaia",
-    name: "بجاية",
-    code: 6,
-    x: 643.6,
-    y: 73.1,
-    cx: 652,
-    cy: 78,
-    dur: "1.7s",
-  },
-  {
-    id: "ray-batna",
-    name: "باتنة",
-    code: 5,
-    x: 687.4,
-    y: 141.2,
-    cx: 680,
-    cy: 118,
-    dur: "2.0s",
-  },
-  {
-    id: "ray-biskra",
-    name: "بسكرة",
-    code: 7,
-    x: 688.6,
-    y: 166.5,
-    cx: 680,
-    cy: 130,
-    dur: "2.5s",
-  },
-  {
-    id: "ray-chlef",
-    name: "الشلف",
-    code: 2,
-    x: 483.5,
-    y: 91.9,
-    cx: 570,
-    cy: 82,
-    dur: "2.6s",
-  },
-  {
-    id: "ray-tlemcen",
-    name: "تلمسان",
-    code: 13,
-    x: 359.0,
-    y: 168.6,
-    cx: 490,
-    cy: 115,
-    dur: "3.1s",
-  },
-];
+const HQ_CODE = 19;
+const VIEWBOX = "300 26 580 244";
 
-const TARGET_WILAYA_CODES = new Set(distributionRays.map((r) => r.code));
+/** A square centred on the origin, half-side h — markers are the logo's
+    blocks, not dots */
+const sq = (h: number) => ({ x: -h, y: -h, width: h * 2, height: h * 2 });
 
-export function FindUsHeroCover() {
-  // Filter only North Algeria wilayas for the regional view
-  const northWilayas = useMemo(
-    () =>
-      algeriaWilayas.filter(
-        (w) =>
-          w.bounds.minY <= 300 &&
-          w.bounds.minX >= 310 &&
-          w.bounds.maxX <= 840
-      ),
+/** A gentle arc from the HQ to a target, always bowing northwards */
+function routePath(from: WilayaData["pin"], to: WilayaData["pin"]) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  let nx = -dy / len;
+  let ny = dx / len;
+  if (ny > 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+  const bow = Math.min(60, len * 0.28);
+  const cx = (from.x + to.x) / 2 + nx * bow;
+  const cy = (from.y + to.y) / 2 + ny * bow;
+  return `M ${from.x} ${from.y} Q ${cx} ${cy} ${to.x} ${to.y}`;
+}
+
+export function FindUsHeroCover({ activeCodes }: { activeCodes: Set<number> }) {
+  const reduced = useReducedMotion();
+
+  const byCode = useMemo(
+    () => new Map(algeriaWilayas.map((w) => [w.code, w])),
     []
   );
+  const hq = byCode.get(HQ_CODE);
+
+  const targets = useMemo(
+    () =>
+      Array.from(activeCodes)
+        .filter((c) => c !== HQ_CODE)
+        .map((c) => byCode.get(c))
+        .filter((w): w is WilayaData => !!w)
+        .sort((a, b) => a.pin.x - b.pin.x),
+    [activeCodes, byCode]
+  );
+
+  if (!hq) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className="relative w-full max-w-lg lg:max-w-xl mx-auto select-none pointer-events-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.9, ease: "easeOut" }}
+      // Phones: edge to edge and a narrower frame (the svg "slices" off the
+      // empty far west/east), so the network fills the screen. From sm up
+      // the frame matches the drawing exactly.
+      className="pointer-events-none relative -mx-4 aspect-[2.1/1] select-none sm:mx-0 sm:aspect-[580/244]"
+      style={{
+        // The dot grid stops mid-country: dissolve that edge into the black
+        maskImage: "linear-gradient(to bottom, #000 62%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, #000 62%, transparent 100%)",
+      }}
+      aria-hidden="true"
     >
-      {/* Soft background ambient radial glow */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10">
-        <div className="w-[85%] h-[80%] rounded-full bg-gradient-to-tr from-amber-500/20 via-primary/15 to-rose-500/10 blur-3xl opacity-80 dark:opacity-60" />
-      </div>
-
-      {/* SVG Container with responsive fade mask (bottom on phone, right towards text on desktop) */}
-      <div className="relative w-full aspect-[1.8/1] max-h-[380px] find-us-hero-fade">
-        <svg
-          viewBox="320 35 520 280"
-          className="w-full h-full filter drop-shadow-[0_20px_35px_rgba(0,0,0,0.3)] dark:drop-shadow-[0_20px_45px_rgba(0,0,0,0.7)]"
-          preserveAspectRatio="xMidYMid meet"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <defs>
-            {/* Sétif Gold Gradient */}
-            <linearGradient id="setifHeroGold" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fde047" />
-              <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#b45309" />
-            </linearGradient>
-
-            {/* Sétif Glow Filter */}
-            <filter id="setifHeroGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow
-                dx="0"
-                dy="0"
-                stdDeviation="6"
-                floodColor="#f59e0b"
-                floodOpacity="0.85"
-              />
-            </filter>
-
-            {/* Arrowhead Marker */}
-            <marker
-              id="heroArrowhead"
-              viewBox="0 0 10 10"
-              refX="8"
-              refY="5"
-              markerWidth="5"
-              markerHeight="5"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#f59e0b" />
-            </marker>
-
-            {/* Ray Flow Gradient */}
-            <linearGradient id="rayFlowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.95" />
-              <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="#e11d48" stopOpacity="0.9" />
-            </linearGradient>
-          </defs>
-
-          {/* ─── NORTH WILAYAS BASE ─── */}
-          <g id="hero-wilayas">
-            {northWilayas.map((wilaya) => {
-              const isSetif = wilaya.code === 19;
-              const isTarget = TARGET_WILAYA_CODES.has(wilaya.code);
-
-              let fill = "#181e29"; // sleek dark slate
-              let stroke = "rgba(255, 255, 255, 0.12)";
-              let strokeWidth = 0.6;
-              let filter = "none";
-
-              if (isSetif) {
-                fill = "url(#setifHeroGold)";
-                stroke = "#fde047";
-                strokeWidth = 1.6;
-                filter = "url(#setifHeroGlow)";
-              } else if (isTarget) {
-                fill = "rgba(225, 29, 72, 0.22)";
-                stroke = "rgba(225, 29, 72, 0.45)";
-                strokeWidth = 0.8;
+      <svg
+        viewBox={VIEWBOX}
+        className="h-full w-full"
+        // xMin: on phones the trim comes off the empty east side only, which
+        // sits the network a little further right. (From sm up the frame
+        // matches the drawing, so nothing is trimmed.)
+        preserveAspectRatio="xMinYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* ── The country, as square print dots ── */}
+        <g>
+          {ALGERIA_NORTH_DOTS.map(([x, y, code]) => (
+            <rect
+              key={`${x}-${y}`}
+              x={x - 1.7}
+              y={y - 1.7}
+              width={3.4}
+              height={3.4}
+              fill={
+                code === HQ_CODE
+                  ? "#E30B17"
+                  : activeCodes.has(code)
+                  ? "rgba(255,255,255,0.55)"
+                  : "rgba(255,255,255,0.16)"
               }
+            />
+          ))}
+        </g>
 
-              return (
+        {/* ── Routes from the headquarters ── */}
+        <g>
+          {targets.map((w, i) => {
+            const d = routePath(hq.pin, w.pin);
+            const dur = `${2.4 + (i % 3) * 0.4}s`;
+            return (
+              <g key={w.code}>
+                {/* Route */}
                 <path
-                  key={wilaya.id}
-                  id={`hero-${wilaya.id}`}
-                  d={wilaya.d}
-                  fill={fill}
-                  stroke={stroke}
-                  strokeWidth={strokeWidth}
-                  strokeLinejoin="round"
-                  filter={filter}
+                  d={d}
+                  fill="none"
+                  stroke="rgba(227,11,23,0.35)"
+                  strokeWidth={1.2}
+                  strokeLinecap="round"
                 />
-              );
-            })}
-          </g>
-
-          {/* ─── DISTRIBUTION RAYS RADIATING FROM SETIF (x: 663, y: 95.9) ─── */}
-          <g id="hero-distribution-rays">
-            {distributionRays.map((ray) => {
-              const pathData = `M 663 95.9 Q ${ray.cx} ${ray.cy} ${ray.x} ${ray.y}`;
-              return (
-                <g key={ray.id}>
-                  {/* Subtle ambient ray glow line */}
-                  <path
-                    d={pathData}
-                    fill="none"
-                    stroke="rgba(245, 158, 11, 0.18)"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Flowing animated dash ray with arrow */}
-                  <path
-                    d={pathData}
-                    fill="none"
-                    stroke="url(#rayFlowGradient)"
-                    strokeWidth="1.6"
-                    strokeDasharray="5 7"
-                    strokeLinecap="round"
-                    markerEnd="url(#heroArrowhead)"
-                  >
+                <path
+                  d={d}
+                  fill="none"
+                  stroke="#E30B17"
+                  strokeWidth={1.4}
+                  strokeLinecap="round"
+                  strokeDasharray="4 7"
+                >
+                  {!reduced && (
                     <animate
                       attributeName="stroke-dashoffset"
-                      values="36; 0"
-                      dur={ray.dur}
+                      values="22;0"
+                      dur="1.4s"
                       repeatCount="indefinite"
                     />
-                  </path>
+                  )}
+                </path>
 
-                  {/* Destination Beacon Node */}
-                  <g transform={`translate(${ray.x}, ${ray.y})`}>
-                    {/* Ripple Aura */}
-                    <circle r="4" fill="rgba(225, 29, 72, 0.35)">
-                      <animate
-                        attributeName="r"
-                        values="3; 10; 3"
-                        dur="2.2s"
+                {/* A delivery travelling out */}
+                {!reduced && (
+                  <rect {...sq(2.2)} fill="#ffffff">
+                    <animateMotion
+                      dur={dur}
+                      begin={`${i * 0.35}s`}
+                      repeatCount="indefinite"
+                      path={d}
+                      keyPoints="0;1"
+                      keyTimes="0;1"
+                      calcMode="linear"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0;1;1;0"
+                      keyTimes="0;0.1;0.85;1"
+                      dur={dur}
+                      begin={`${i * 0.35}s`}
+                      repeatCount="indefinite"
+                    />
+                  </rect>
+                )}
+
+                {/* Destination */}
+                <g transform={`translate(${w.pin.x}, ${w.pin.y})`}>
+                  {!reduced && (
+                    <rect {...sq(2.8)} fill="rgba(227,11,23,0.5)">
+                      <animateTransform
+                        attributeName="transform"
+                        type="scale"
+                        values="1;3.6;1"
+                        dur="2.6s"
+                        begin={`${i * 0.3}s`}
                         repeatCount="indefinite"
                       />
                       <animate
                         attributeName="opacity"
-                        values="0.8; 0; 0.8"
-                        dur="2.2s"
+                        values="0.7;0;0.7"
+                        dur="2.6s"
+                        begin={`${i * 0.3}s`}
                         repeatCount="indefinite"
                       />
-                    </circle>
-
-                    {/* Core Point */}
-                    <circle
-                      r="2.8"
-                      fill="#e11d48"
-                      stroke="#ffffff"
-                      strokeWidth="1"
-                    />
-
-                    {/* City Micro-label */}
+                    </rect>
+                  )}
+                  <rect {...sq(3.1)} fill="#E30B17" stroke="#ffffff" strokeWidth={1.2} />
+                  {/* Name above the dot, or below it for wilayas south of the
+                      HQ so it clears the headquarters tag */}
+                  <g className="ri-net-tag">
                     <text
-                      x="0"
-                      y="-7"
+                      y={w.pin.y > hq.pin.y + 12 ? 15 : -9}
                       textAnchor="middle"
-                      fill="rgba(255, 255, 255, 0.75)"
-                      fontSize="7.5"
-                      fontWeight="bold"
+                      fill="rgba(255,255,255,0.88)"
+                      fontSize={9.5}
+                      fontWeight={700}
                       fontFamily="inherit"
+                      // Dark halo keeps the name crisp over the dots
+                      stroke="#1D1D1B"
+                      strokeWidth={3}
+                      strokeLinejoin="round"
+                      paintOrder="stroke"
                     >
-                      {ray.name}
+                      {w.nameAr}
                     </text>
                   </g>
                 </g>
-              );
-            })}
-          </g>
+              </g>
+            );
+          })}
+        </g>
 
-          {/* ─── SETIF HQ CENTER BEACON & LABEL ─── */}
-          <g transform="translate(663, 95.9)" id="hero-setif-hq">
-            {/* Outer expanding radar ring 1 */}
-            <circle r="8" fill="rgba(245, 158, 11, 0.45)">
-              <animate
-                attributeName="r"
-                values="8; 32; 8"
-                dur="2.4s"
-                repeatCount="indefinite"
-              />
-              <animate
-                attributeName="opacity"
-                values="0.9; 0; 0.9"
-                dur="2.4s"
-                repeatCount="indefinite"
-              />
-            </circle>
-
-            {/* Outer expanding radar ring 2 */}
-            <circle r="14" fill="rgba(245, 158, 11, 0.25)">
-              <animate
-                attributeName="r"
-                values="14; 44; 14"
-                dur="2.4s"
-                repeatCount="indefinite"
-              />
-              <animate
-                attributeName="opacity"
-                values="0.7; 0; 0.7"
-                dur="2.4s"
-                repeatCount="indefinite"
-              />
-            </circle>
-
-            {/* Solid Golden Core */}
-            <circle
-              r="6.5"
-              fill="#f59e0b"
-              stroke="#ffffff"
-              strokeWidth="2"
-              filter="url(#setifHeroGlow)"
-            />
-
-            {/* Glowing HQ Badge Floating Above Sétif */}
-            <g transform="translate(0, -22)">
-              <rect
-                x="-46"
-                y="-11"
-                width="92"
-                height="20"
-                rx="10"
-                fill="#d97706"
-                filter="drop-shadow(0 4px 10px rgba(0,0,0,0.5))"
-              />
+        {/* ── Headquarters ── */}
+        <g transform={`translate(${hq.pin.x}, ${hq.pin.y})`}>
+          {!reduced &&
+            [0, 1.2].map((begin) => (
+              <rect key={begin} {...sq(5.5)} fill="rgba(227,11,23,0.45)">
+                <animateTransform
+                  attributeName="transform"
+                  type="scale"
+                  values="1;4.4"
+                  dur="2.4s"
+                  begin={`${begin}s`}
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.8;0"
+                  dur="2.4s"
+                  begin={`${begin}s`}
+                  repeatCount="indefinite"
+                />
+              </rect>
+            ))}
+          <rect {...sq(6)} fill="#ffffff" stroke="#E30B17" strokeWidth={2.5} />
+          <rect {...sq(2.2)} fill="#E30B17" />
+          <g transform="translate(0, 24)">
+            <g className="ri-net-tag">
+              <rect x={-50} y={-10} width={100} height={19} fill="#E30B17" />
               <text
-                x="0"
-                y="2.5"
+                y={3.4}
                 textAnchor="middle"
                 fill="#ffffff"
-                fontSize="8.5"
-                fontWeight="bold"
+                fontSize={9}
+                fontWeight={700}
                 fontFamily="inherit"
               >
-                🏢 سطيف — المقر الرئيسي
+                سطيف — المقر الرئيسي
               </text>
             </g>
           </g>
-        </svg>
-      </div>
+        </g>
+      </svg>
     </motion.div>
   );
 }
+
+export default FindUsHeroCover;

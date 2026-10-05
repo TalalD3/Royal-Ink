@@ -58,7 +58,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/contact"
-            className="bg-primary text-white px-6 py-2.5 rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"
+            className="ri-btn ri-btn-red h-11 px-6 text-sm"
           >
             اتصل بنا
           </Link>
@@ -78,17 +78,19 @@ export function SiteFooter() {
   if (pathname?.startsWith("/admin")) return null;
 
   return (
-    <footer className="bg-[#1a1a1a] text-white pt-16 pb-6">
+    <footer className="bg-[#1a1a1a] text-white pt-10 md:pt-14 pb-6">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 border-b border-white/10 pb-12 mb-6">
+        {/* Compact and start-aligned at every size: three columns from md
+            up, stacked on phones; quick links always in two columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 lg:gap-16 border-b border-white/10 pb-8 md:pb-10 mb-6">
           {/* Brand Col */}
-          <div className="space-y-6 flex flex-col items-center md:items-start text-center md:text-start">
+          <div className="space-y-4 flex flex-col items-start text-start">
             <img
               src="/images/logo-footer-new.svg"
               alt="Royal Ink"
-              className="h-10"
+              className="h-9 md:h-10"
             />
-            <div className="space-y-4 text-sm text-gray-400">
+            <div className="space-y-2 text-[13px] md:text-sm text-gray-400 md:max-w-sm">
               <p className="font-semibold text-gray-300">
                 روايال إنك: دقة في كل طباعة.
               </p>
@@ -97,12 +99,13 @@ export function SiteFooter() {
                 الطابعة. مستلزمات طباعة سريعة وموثوقة للشركات الجزائرية.
               </p>
             </div>
-            <div className="flex items-center justify-center md:justify-start gap-4 pt-2">
-              <span className="text-sm font-medium">تواصل معنا</span>
+            <div className="flex items-center justify-start gap-4">
+              <span className="text-sm font-medium">تابعونا</span>
               <div className="flex gap-2">
                 <a
                   href="#"
-                  className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary hover:scale-110 transition-transform"
+                  aria-label="Facebook"
+                  className="w-8 h-8 bg-white flex items-center justify-center text-primary transition-colors hover:bg-brand-red hover:text-white"
                 >
                   <svg
                     className="w-4 h-4"
@@ -119,7 +122,8 @@ export function SiteFooter() {
                 </a>
                 <a
                   href="#"
-                  className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary hover:scale-110 transition-transform"
+                  aria-label="Instagram"
+                  className="w-8 h-8 bg-white flex items-center justify-center text-primary transition-colors hover:bg-brand-red hover:text-white"
                 >
                   <svg
                     className="w-4 h-4"
@@ -139,9 +143,9 @@ export function SiteFooter() {
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-6 flex flex-col items-center md:items-start text-center md:text-start">
-            <h3 className="text-lg font-semibold">روابط سريعة</h3>
-            <nav className="flex flex-col space-y-3 text-sm text-gray-400 items-center md:items-start">
+          <div className="space-y-4 flex flex-col items-start text-start">
+            <h3 className="text-base md:text-lg font-semibold">روابط سريعة</h3>
+            <nav className="grid w-full max-w-xs grid-cols-2 gap-x-8 gap-y-3 text-sm text-gray-400">
               <Link href="/" className="hover:text-white transition-colors w-fit">
                 الرئيسية
               </Link>
@@ -179,10 +183,10 @@ export function SiteFooter() {
           </div>
 
           {/* Contact Info */}
-          <div className="space-y-6 flex flex-col items-center md:items-start text-center md:text-start">
-            <h3 className="text-lg font-semibold">تواصل معنا</h3>
-            <div className="space-y-4 text-sm text-gray-400">
-              <div className="flex items-center gap-3 justify-center md:justify-start">
+          <div className="space-y-4 flex flex-col items-start text-start">
+            <h3 className="text-base md:text-lg font-semibold">تواصل معنا</h3>
+            <div className="space-y-3 text-sm text-gray-400">
+              <div className="flex items-center gap-3 justify-start">
                 <svg
                   className="w-4 h-4 shrink-0"
                   fill="none"
@@ -196,11 +200,13 @@ export function SiteFooter() {
                     d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
-                <span>royalinkdz@gmail.com</span>
+                <a href="mailto:royalinkdz@gmail.com" className="hover:text-white transition-colors">
+                  royalinkdz@gmail.com
+                </a>
               </div>
-              <div className="flex items-center gap-3 justify-center md:justify-start">
+              <div className="flex items-start gap-3 justify-start">
                 <svg
-                  className="w-4 h-4 shrink-0"
+                  className="w-4 h-4 shrink-0 mt-0.5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -212,9 +218,17 @@ export function SiteFooter() {
                     d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                   />
                 </svg>
-                <span dir="ltr">+213 666 50 99 41 | +213 550 89 94 84</span>
+                {/* One number per line so neither ever breaks mid-number */}
+                <span className="flex flex-col items-start gap-1">
+                  <a dir="ltr" href="tel:+213666509941" className="whitespace-nowrap hover:text-white transition-colors">
+                    +213 666 50 99 41
+                  </a>
+                  <a dir="ltr" href="tel:+213550899484" className="whitespace-nowrap hover:text-white transition-colors">
+                    +213 550 89 94 84
+                  </a>
+                </span>
               </div>
-              <div className="flex items-start gap-3 justify-center md:justify-start">
+              <div className="flex items-start gap-3 justify-start">
                 <svg
                   className="w-4 h-4 shrink-0 mt-0.5"
                   fill="none"

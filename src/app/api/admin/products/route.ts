@@ -3,6 +3,13 @@ import { supabase } from "@/lib/supabase/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { initialProducts } from "@/data/initial-products";
 import type { Product } from "@/types/product";
+import {
+  rowToProduct,
+  legacyRow,
+  v2Columns,
+  isMissingColumnError,
+  MIGRATION_WARNING,
+} from "@/lib/product-db";
 
 export const dynamic = "force-dynamic";
 
@@ -33,23 +40,7 @@ export async function GET(req: NextRequest) {
 
     if (!error) {
       // Map database snake_case or standard fields
-      const formatted: Product[] = (data || []).map((d: any) => ({
-        id: d.id,
-        name: d.name,
-        brand: d.brand,
-        category: d.category,
-        sku: d.sku || undefined,
-        color: d.color || "black",
-        imageUrl: d.image_url || undefined,
-        compatiblePrinters: Array.isArray(d.compatible_printers)
-          ? d.compatible_printers
-          : typeof d.compatible_printers === "string"
-          ? JSON.parse(d.compatible_printers || "[]")
-          : [],
-        notes: d.notes || undefined,
-        isActive: d.is_active ?? true,
-        createdAt: d.created_at,
-      }));
+      const formatted: Product[] = (data || []).map(rowToProduct);
       return NextResponse.json({ data: formatted });
     }
 
@@ -71,22 +62,20 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const items = Array.isArray(body) ? body : [body];
 
-    const dbPayload = items.map((p: Partial<Product>) => ({
-      name: p.name,
-      brand: p.brand || "HP",
-      category: p.category || "toner",
-      sku: p.sku || null,
-      color: p.color || "black",
-      image_url: p.imageUrl || null,
-      compatible_printers: p.compatiblePrinters || [],
-      notes: p.notes || null,
-      is_active: p.isActive ?? true,
-    }));
-
-    const { data, error } = await supabaseAdmin
+    let warning: string | undefined;
+    let { data, error } = await supabaseAdmin
       .from("products")
-      .insert(dbPayload)
+      .insert(items.map((p: Partial<Product>) => ({ ...legacyRow(p), ...v2Columns(p) })))
       .select();
+
+    // The v2 columns are not there yet: save the basics and say so
+    if (isMissingColumnError(error)) {
+      warning = MIGRATION_WARNING;
+      ({ data, error } = await supabaseAdmin
+        .from("products")
+        .insert(items.map((p: Partial<Product>) => legacyRow(p)))
+        .select());
+    }
 
     if (error) {
       // If table doesn't exist, return simulated success with UUIDs
@@ -98,7 +87,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: simulated, warning: "Saved locally (Supabase table pending)" });
     }
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, warning });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Failed to create" }, { status: 500 });
   }
@@ -129,18 +118,35 @@ export async function PUT(req: NextRequest) {
     if (updates.compatiblePrinters !== undefined) dbPayload.compatible_printers = updates.compatiblePrinters;
     if (updates.notes !== undefined) dbPayload.notes = updates.notes;
     if (updates.isActive !== undefined) dbPayload.is_active = updates.isActive;
+    if (updates.notesI18n?.ar !== undefined) dbPayload.notes = updates.notesI18n.ar || null;
 
-    const { data, error } = await supabaseAdmin
+    const v2: any = {};
+    const v2Values = v2Columns(updates);
+    if (updates.slug !== undefined) v2.slug = v2Values.slug;
+    if (updates.specs !== undefined) v2.specs = v2Values.specs;
+    if (updates.notesI18n !== undefined) v2.notes_i18n = v2Values.notes_i18n;
+
+    let warning: string | undefined;
+    let { data, error } = await supabaseAdmin
       .from("products")
-      .update(dbPayload)
+      .update({ ...dbPayload, ...v2 })
       .eq("id", id)
       .select();
+
+    if (isMissingColumnError(error)) {
+      warning = MIGRATION_WARNING;
+      ({ data, error } = await supabaseAdmin
+        .from("products")
+        .update(dbPayload)
+        .eq("id", id)
+        .select());
+    }
 
     if (error) {
       return NextResponse.json({ data: { id, ...updates }, warning: "Saved locally" });
     }
 
-    return NextResponse.json({ data: data?.[0] });
+    return NextResponse.json({ data: data?.[0], warning });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -32,6 +32,19 @@
     --paper: #F7F6F4;
     --line: #E7E4DF;
     --gray: #5B5F66;
+
+    /* Logo palette (RGB channels) — sampled from /images/logo.svg */
+    --brand-black: 29 29 27;    /* #1D1D1B — the ROYAL block */
+    --brand-red: 227 11 23;     /* #E30B17 — the INK block */
+    --brand-red-dark: 186 9 19; /* #BA0913 — hover / pressed */
+    --brand-mist: 245 245 243;  /* #F5F5F3 — quiet section background */
+    --brand-line: 228 228 225;  /* #E4E4E1 — hairlines */
+    --brand-gray: 92 92 88;     /* #5C5C58 — secondary text */
+    /* Process inks — used only where they mean something (ink colours,
+       print marks, the loader). Yellow is a fill, never text. */
+    --cmyk-c: 0 159 227;        /* #009FE3 */
+    --cmyk-m: 230 0 126;        /* #E6007E */
+    --cmyk-y: 255 221 0;        /* #FFDD00 */
   }
 
   .dark {
@@ -84,42 +97,408 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Diagonal Client Segment Shapes inspired by reference */
-/* Mobile (< 768px): Lower idle overlay (starting at 52%-64%) showing photo clearly in top ~55% */
-.segment-shape-left {
-  clip-path: polygon(0 64%, 100% 52%, 100% 100%, 0 100%);
-  transition: clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: clip-path;
-}
-.segment-shape-left.is-expanded {
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+/* ══════════════════════════════════════════════════════════════════════
+   BRAND SYSTEM — "the label"
+   Every Royal Ink cartridge carries the same two-block label: a black
+   block butted against a colour block. These pieces carry that idea.
+   ══════════════════════════════════════════════════════════════════════ */
+@layer components {
+  /* Section eyebrow, led by the two-tone rule (black then red, in the
+     logo's 64/36 proportion, read right-to-left). */
+  .ri-eyebrow {
+    @apply flex items-center gap-3 text-sm font-bold text-brand-red;
+  }
+  .ri-eyebrow::before {
+    content: "";
+    @apply block h-1 w-9 shrink-0;
+    background: linear-gradient(
+      to left,
+      rgb(var(--brand-black)) 0 64%,
+      rgb(var(--brand-red)) 64% 100%
+    );
+  }
+  /* On the black block: white then red */
+  .ri-eyebrow-light {
+    @apply text-white/70;
+  }
+  .ri-eyebrow-light::before {
+    background: linear-gradient(
+      to left,
+      #fff 0 64%,
+      rgb(var(--brand-red)) 64% 100%
+    );
+  }
+  /* On the red block: black then white */
+  .ri-eyebrow-onred {
+    @apply text-white;
+  }
+  .ri-eyebrow-onred::before {
+    background: linear-gradient(
+      to left,
+      rgb(var(--brand-black)) 0 64%,
+      #fff 64% 100%
+    );
+  }
+
+  .ri-h2 {
+    @apply text-[1.75rem] font-extrabold leading-[1.3] text-brand-black md:text-[2.375rem];
+  }
+  .ri-lead {
+    @apply text-base leading-8 text-brand-gray md:text-[17px];
+  }
+
+  /* Buttons — square, like the logo's blocks. On hover a block of the
+     other brand colour slides in from the start edge and fills them. */
+  .ri-btn {
+    @apply relative isolate inline-flex h-12 items-center justify-center gap-2.5 overflow-hidden whitespace-nowrap px-7 text-[15px] font-bold;
+    transition: color 0.35s ease, border-color 0.35s ease;
+  }
+  .ri-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--ri-btn-fill);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .ri-btn:hover::before,
+  .ri-btn:focus-visible::before {
+    transform: scaleX(1);
+  }
+  .ri-btn svg {
+    transition: transform 0.3s ease;
+  }
+  .ri-btn:hover svg {
+    transform: translateX(-3px);
+  }
+  .ri-btn:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-brand-red;
+  }
+  .ri-btn-red {
+    background: rgb(var(--brand-red));
+    color: #fff;
+    --ri-btn-fill: rgb(var(--brand-black));
+  }
+  .ri-btn-black {
+    background: rgb(var(--brand-black));
+    color: #fff;
+    --ri-btn-fill: rgb(var(--brand-red));
+  }
+  .ri-btn-white {
+    background: #fff;
+    color: rgb(var(--brand-black));
+    --ri-btn-fill: rgb(var(--brand-black));
+  }
+  .ri-btn-white:hover,
+  .ri-btn-white:focus-visible {
+    color: #fff;
+  }
+  .ri-btn-white:focus-visible {
+    @apply outline-white;
+  }
+  .ri-btn-outline-light {
+    border: 1px solid rgb(255 255 255 / 0.35);
+    color: #fff;
+    --ri-btn-fill: #fff;
+  }
+  .ri-btn-outline-light:hover,
+  .ri-btn-outline-light:focus-visible {
+    color: rgb(var(--brand-black));
+    border-color: #fff;
+  }
+  .ri-btn-outline-light:focus-visible {
+    @apply outline-white;
+  }
+
+  /* Secondary link — the label lockup: the text in an outlined box, the
+     arrow on a red block at its end. The block sends out a slow square
+     pulse so the link gets noticed; on hover the red floods the box. */
+  .ri-link {
+    @apply relative isolate inline-flex h-11 items-center gap-3 whitespace-nowrap text-[15px] font-bold text-brand-black;
+    padding-inline: 1.25rem 0;
+    border: 1px solid rgb(var(--brand-black) / 0.2);
+    transition: color 0.3s ease, border-color 0.3s ease;
+  }
+  .ri-link:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-brand-red;
+  }
+  /* The red block */
+  .ri-link::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset-block: -1px;
+    inset-inline-end: -1px;
+    width: 2.75rem;
+    background: rgb(var(--brand-red));
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* The pulse it sends out */
+  .ri-link::after {
+    content: "";
+    position: absolute;
+    z-index: -2;
+    inset-block: -1px;
+    inset-inline-end: -1px;
+    width: 2.75rem;
+    background: rgb(var(--brand-red) / 0.35);
+    animation: riLinkRing 2.8s ease-out infinite;
+  }
+  .ri-link svg {
+    box-sizing: content-box;
+    flex-shrink: 0;
+    padding: 0.8125rem;
+    color: #fff;
+    transition: transform 0.3s ease;
+  }
+  .ri-link:hover,
+  .ri-link:active {
+    color: #fff;
+    border-color: rgb(var(--brand-red));
+  }
+  .ri-link:hover::before,
+  .ri-link:active::before {
+    width: calc(100% + 2px);
+  }
+  .ri-link:hover::after,
+  .ri-link:active::after {
+    animation: none;
+    opacity: 0;
+  }
+  .ri-link:hover svg,
+  .ri-link:active svg {
+    transform: translateX(-3px);
+  }
+
+  /* Printer's crop marks — four thin L-marks just outside the corners of
+     a photo or panel, as on a print sheet. They turn red on hover.
+     (Put it on a wrapper that does not clip its overflow.) */
+  .ri-crop {
+    position: relative;
+    --crop-g: 16px; /* gap + mark length */
+    --crop-l: 9px; /* mark length */
+    --crop-color: rgb(var(--brand-black) / 0.4);
+  }
+  .ri-crop-light {
+    --crop-color: rgb(255 255 255 / 0.45);
+  }
+  .ri-crop::after {
+    content: "";
+    position: absolute;
+    inset: calc(var(--crop-g) * -1);
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--crop-color), var(--crop-color)) 0 var(--crop-g) / var(--crop-l) 1px no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) var(--crop-g) 0 / 1px var(--crop-l) no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) 100% var(--crop-g) / var(--crop-l) 1px no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) calc(100% - var(--crop-g)) 0 / 1px var(--crop-l) no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) 0 calc(100% - var(--crop-g)) / var(--crop-l) 1px no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) var(--crop-g) 100% / 1px var(--crop-l) no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) 100% calc(100% - var(--crop-g)) / var(--crop-l) 1px no-repeat,
+      linear-gradient(var(--crop-color), var(--crop-color)) calc(100% - var(--crop-g)) 100% / 1px var(--crop-l) no-repeat;
+  }
+  .ri-crop:hover,
+  .group:hover .ri-crop {
+    --crop-color: rgb(var(--brand-red));
+  }
+
+  /* Print raster — a fine grid of square dots, the texture of a printed
+     sheet under a loupe. Laid over the black blocks, faded at one side. */
+  .ri-raster {
+    background-image: conic-gradient(
+      from 270deg at 2px 2px,
+      rgb(255 255 255 / 0.09) 25%,
+      transparent 0
+    );
+    background-size: 9px 9px;
+  }
+
+  /* Label strip — the logo's black + red blocks as a thin band along the
+     top edge of a card */
+  .ri-strip {
+    position: relative;
+  }
+  .ri-strip::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 3px;
+    background: linear-gradient(
+      to right,
+      rgb(var(--brand-black)) 0 64%,
+      rgb(var(--brand-red)) 64% 100%
+    );
+  }
 }
 
-.segment-shape-right {
-  clip-path: polygon(0 52%, 100% 64%, 100% 100%, 0 100%);
-  transition: clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: clip-path;
-}
-.segment-shape-right.is-expanded {
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+/* Print control strip — the colour bar printed along the edge of a test
+   sheet: C, M, Y, K solids then their 50% tints, repeated */
+.ri-colorbar {
+  background-image: linear-gradient(
+    to right,
+    rgb(var(--cmyk-c)) 0 12.5%,
+    rgb(var(--cmyk-m)) 0 25%,
+    rgb(var(--cmyk-y)) 0 37.5%,
+    rgb(var(--brand-black)) 0 50%,
+    rgb(var(--cmyk-c) / 0.5) 0 62.5%,
+    rgb(var(--cmyk-m) / 0.5) 0 75%,
+    rgb(var(--cmyk-y) / 0.5) 0 87.5%,
+    rgb(var(--brand-black) / 0.5) 0 100%
+  );
+  background-size: 96px 100%;
 }
 
-/* Desktop (>= 768px): Alternating left/right horizontal diagonal split */
+/* Print loader — four ink squares laid down one after the other */
+@keyframes riPrint {
+  0%, 8% { transform: scaleY(0); }
+  30%, 70% { transform: scaleY(1); }
+  92%, 100% { transform: scaleY(0); }
+}
+.ri-print-ink {
+  transform-origin: top;
+  animation: riPrint 1.8s cubic-bezier(.65, 0, .35, 1) infinite;
+}
+/* …and once, staying printed (the hero's test sheet) */
+@keyframes riPrintOnce {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.ri-print-once {
+  transform-origin: top;
+  transform: scaleY(0);
+  animation: riPrintOnce 0.6s cubic-bezier(.65, 0, .35, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ri-print-ink,
+  .ri-print-once { animation: none; transform: none; }
+}
+
+/* Skeleton shimmer for loading cards */
+@keyframes riShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.ri-skeleton {
+  background: linear-gradient(90deg, rgb(var(--brand-mist)) 25%, rgb(var(--brand-line)) 50%, rgb(var(--brand-mist)) 75%);
+  background-size: 200% 100%;
+  animation: riShimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ri-skeleton { animation: none; }
+}
+
+/* Journey (about page) — one unit = 1% of the pinned frame's height
+   (the screen under the 80px header), so the collage keeps its
+   composition on any screen */
+.ri-journey {
+  --u: calc((100vh - 80px) / 100);
+  /* The page container's side gutter (container 1400px + 1rem padding),
+     so the timeline's first and last words line up with the header */
+  --pad: max(1rem, calc((100vw - 1400px) / 2 + 1rem));
+}
+@supports (height: 100svh) {
+  .ri-journey {
+    --u: calc((100svh - 80px) / 100);
+  }
+}
+
+@keyframes riNudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-6px); }
+}
+.ri-nudge {
+  animation: riNudge 1.4s ease-in-out infinite;
+}
+
+@keyframes riLinkRing {
+  0% { transform: scale(1); opacity: 0.7; }
+  60%, 100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Sector cards — solid panel under the copy, fading out only in the
+   padding above it (5rem on phones, 6rem from md up) */
+.ri-segment-copy {
+  background: linear-gradient(to top, #242422 calc(100% - 5rem), rgba(36, 36, 34, 0));
+}
 @media (min-width: 768px) {
-  .segment-shape-left {
-    clip-path: polygon(0 0, 58% 0, 48% 100%, 0 100%);
+  .ri-segment-copy {
+    background: linear-gradient(to top, #242422 calc(100% - 6rem), rgba(36, 36, 34, 0));
   }
-  .group:hover .segment-shape-left,
-  .segment-shape-left.is-expanded {
-    clip-path: polygon(0 0, 72% 0, 62% 100%, 0 100%);
-  }
+}
 
-  .segment-shape-right {
-    clip-path: polygon(42% 0, 100% 0, 100% 100%, 52% 100%);
+/* Hero slide timer — fills the active indicator over one interval */
+@keyframes heroProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.hero-progress {
+  animation: heroProgress linear forwards;
+}
+
+/* Find-us map — soft edges instead of a frame: fades out strongly at the
+   bottom (towards the south) and gently on the other sides, so a zoomed-in
+   map reads as a window rather than a black box */
+.ri-locator-map {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 74%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 74%, transparent 100%),
+    linear-gradient(to right, transparent 0, #000 4%, #000 96%, transparent 100%);
+  mask-composite: intersect;
+}
+
+/* Home map — pins are drawn in map units, so they shrink with the map on
+   phones; enlarge them there (origin is the pin centre) */
+.ri-map-pin {
+  transform: scale(1.7);
+}
+@media (min-width: 1024px) {
+  .ri-map-pin {
+    transform: none;
   }
-  .group:hover .segment-shape-right,
-  .segment-shape-right.is-expanded {
-    clip-path: polygon(28% 0, 100% 0, 100% 100%, 38% 100%);
+}
+
+/* Find-us hero network — on phones the drawing is small, so its name tags
+   are enlarged around their own anchor (the city dot / HQ) */
+@media (max-width: 639px) {
+  .ri-net-tag {
+    transform: scale(1.25);
+  }
+}
+
+/* Compatibility matcher — typing caret */
+@keyframes matcherCaret {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+.matcher-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.15em;
+  margin-left: 2px;
+  vertical-align: -0.2em;
+  background: rgb(var(--brand-red));
+  animation: matcherCaret 0.9s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ri-link:hover svg,
+  .ri-link:active svg {
+    transform: none;
+  }
+  .ri-link::after {
+    animation: none;
+    opacity: 0;
+  }
+  .hero-progress {
+    animation: none;
+  }
+  .matcher-caret {
+    display: none;
   }
 }
 

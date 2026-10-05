@@ -2,8 +2,17 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase/client";
-import type { Product, ProductCategory, PrinterBrand, ProductColor } from "@/types/product";
-import { CATEGORIES_CONFIG, SUPPORTED_BRANDS } from "@/types/product";
+import type {
+  Product,
+  ProductCategory,
+  PrinterBrand,
+  ProductColor,
+  ProductSpecs,
+  LocalizedText,
+} from "@/types/product";
+import { CATEGORIES_CONFIG, CATEGORY_ORDER, SUPPORTED_BRANDS } from "@/types/product";
+import { CATEGORY_DEFAULT_SPECS, CATEGORY_SPECS } from "@/i18n/specs";
+import { ProductNotesEditor, ProductSpecsEditor } from "./product-details-editor";
 import { initialProducts } from "@/data/initial-products";
 import { ImageCropperModal } from "@/components/ui/image-cropper-modal";
 import {
@@ -38,8 +47,11 @@ import {
 const CATEGORY_ICONS: Record<ProductCategory, string> = {
   printer: "", // uses Lucide <Printer />
   toner: "/images/icon-toner.png",
+  cartridge: "/images/icon-ink.png",
   ink: "/images/icon-ink.png",
   drum_unit: "/images/icon-drum.jpg",
+  fuser: "", // emoji fallback
+  ribbon: "", // emoji fallback
   spare_parts: "", // uses Lucide
 };
 
@@ -47,10 +59,23 @@ const CATEGORY_ICONS: Record<ProductCategory, string> = {
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
   printer: "طابعة",
   toner: "تونر",
+  cartridge: "خراطيش نفث الحبر",
   ink: "حبر سائل",
   drum_unit: "درام",
+  fuser: "فيوزر",
+  ribbon: "شريط ريبون",
   spare_parts: "قطع غيار",
 };
+
+/** Only the specs that belong to the category, empty ones dropped */
+function specsForCategory(specs: ProductSpecs, category: ProductCategory): ProductSpecs {
+  const out: ProductSpecs = {};
+  CATEGORY_SPECS[category].forEach((k) => {
+    const v = specs[k]?.toString().trim();
+    if (v) out[k] = v;
+  });
+  return out;
+}
 
 export function AdminProductsManager() {
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -78,6 +103,12 @@ export function AdminProductsManager() {
   const [printerInput, setPrinterInput] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formSlug, setFormSlug] = useState("");
+  const [formSpecs, setFormSpecs] = useState<ProductSpecs>({});
+  const [formNotesI18n, setFormNotesI18n] = useState<LocalizedText>({});
+
+  // Warning returned by the API after a save (e.g. SQL v2 not run yet)
+  const [saveWarning, setSaveWarning] = useState("");
 
   // Image Cropper States
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -140,8 +171,17 @@ export function AdminProductsManager() {
     setPrinterInput("");
     setFormNotes("");
     setFormIsActive(true);
+    setFormSlug("");
+    setFormSpecs({ ...(CATEGORY_DEFAULT_SPECS.toner ?? {}) });
+    setFormNotesI18n({});
     setModalError("");
     setIsModalOpen(true);
+  };
+
+  // Changing category keeps typed values and adds that category's defaults
+  const handleCategoryChange = (cat: ProductCategory) => {
+    setFormCategory(cat);
+    setFormSpecs((prev) => ({ ...(CATEGORY_DEFAULT_SPECS[cat] ?? {}), ...prev }));
   };
 
   // Open modal for Edit
@@ -157,6 +197,9 @@ export function AdminProductsManager() {
     setPrinterInput("");
     setFormNotes(p.notes || "");
     setFormIsActive(p.isActive);
+    setFormSlug(p.slug || "");
+    setFormSpecs({ ...(p.specs ?? {}) });
+    setFormNotesI18n({ ...(p.notesI18n ?? {}), ar: p.notesI18n?.ar ?? p.notes ?? "" });
     setModalError("");
     setIsModalOpen(true);
   };
@@ -249,8 +292,11 @@ export function AdminProductsManager() {
       color: formColor,
       imageUrl: formImageUrl.trim() || undefined,
       compatiblePrinters: formCompatiblePrinters,
-      notes: formNotes.trim() || undefined,
+      notes: formNotesI18n.ar?.trim() || undefined,
       isActive: formIsActive,
+      slug: formSlug.trim() || undefined,
+      specs: specsForCategory(formSpecs, formCategory),
+      notesI18n: formNotesI18n,
     };
 
     try {
@@ -270,6 +316,8 @@ export function AdminProductsManager() {
           body: JSON.stringify({ id: editingProduct.id, ...payload }),
         });
         if (!res.ok) throw new Error("فشل حفظ التعديلات");
+        const json = await res.json().catch(() => ({}));
+        setSaveWarning(json.warning || "");
       } else {
         // Create
         const res = await fetch("/api/admin/products", {
@@ -281,6 +329,8 @@ export function AdminProductsManager() {
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error("فشل إنشاء المنتج");
+        const json = await res.json().catch(() => ({}));
+        setSaveWarning(json.warning || "");
       }
 
       setIsModalOpen(false);
@@ -450,9 +500,13 @@ export function AdminProductsManager() {
     const total = products.length;
     const printerCount = products.filter((p) => p.category === "printer").length;
     const tonerCount = products.filter((p) => p.category === "toner").length;
-    const inkCount = products.filter((p) => p.category === "ink").length;
+    const inkCount = products.filter((p) => p.category === "ink" || p.category === "cartridge").length;
     const drumPartsCount = products.filter(
-      (p) => p.category === "drum_unit" || p.category === "spare_parts"
+      (p) =>
+        p.category === "drum_unit" ||
+        p.category === "fuser" ||
+        p.category === "ribbon" ||
+        p.category === "spare_parts"
     ).length;
     return { total, printerCount, tonerCount, inkCount, drumPartsCount };
   }, [products]);
@@ -471,12 +525,29 @@ export function AdminProductsManager() {
       );
     }
     if (cat === "printer") return <Printer style={{ width: size, height: size }} />;
-    // spare_parts fallback
-    return <span style={{ fontSize: size * 0.75 }}>🔧</span>;
+    // fuser / ribbon / spare parts fallback
+    return <span style={{ fontSize: size * 0.75 }}>{CATEGORIES_CONFIG[cat]?.icon ?? "🔧"}</span>;
   };
 
   return (
     <div className="space-y-4">
+      {saveWarning && (
+        <div className="flex items-start justify-between gap-3 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-[12px] font-medium dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900">
+          <span className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            {saveWarning}
+          </span>
+          <button
+            type="button"
+            onClick={() => setSaveWarning("")}
+            className="shrink-0 text-amber-700 hover:text-amber-900 cursor-pointer"
+            aria-label="إغلاق"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* ─── STATS CARDS ─── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
         {/* Total */}
@@ -656,11 +727,11 @@ export function AdminProductsManager() {
             className="h-9 pr-2.5 pl-10 rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[130px]"
           >
             <option value="all">كل التصنيفات</option>
-            <option value="printer">طابعات</option>
-            <option value="toner">تونر</option>
-            <option value="ink">حبر سائل</option>
-            <option value="drum_unit">درام</option>
-            <option value="spare_parts">قطع غيار</option>
+            {CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -863,7 +934,7 @@ export function AdminProductsManager() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
           dir="rtl"
         >
-          <div className="relative w-full max-w-xl bg-white dark:bg-card border border-border rounded-lg shadow-2xl overflow-hidden my-4">
+          <div className="relative w-full max-w-2xl bg-white dark:bg-card border border-border rounded-lg shadow-2xl overflow-hidden my-4">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20 dark:bg-muted/10">
               <h3 className="text-[13px] font-semibold text-foreground">
@@ -970,14 +1041,14 @@ export function AdminProductsManager() {
                   <label className="block text-[12px] font-semibold text-foreground mb-1">التصنيف</label>
                   <select
                     value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as ProductCategory)}
+                    onChange={(e) => handleCategoryChange(e.target.value as ProductCategory)}
                     className="w-full h-9 px-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
                   >
-                    <option value="printer">طابعة</option>
-                    <option value="toner">تونر</option>
-                    <option value="ink">حبر سائل</option>
-                    <option value="drum_unit">درام</option>
-                    <option value="spare_parts">قطع غيار</option>
+                    {CATEGORY_ORDER.map((c) => (
+                      <option key={c} value={c}>
+                        {CATEGORY_LABELS[c]}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1033,16 +1104,46 @@ export function AdminProductsManager() {
                 isPrinterCategory={formCategory === "printer"}
               />
 
-              {/* Notes */}
+              {/* Structured specs (by category) */}
+              <ProductSpecsEditor
+                category={formCategory}
+                specs={formSpecs}
+                legacyNotes={formNotes}
+                onChange={setFormSpecs}
+              />
+
+              {/* Description: auto summary + optional note per language */}
+              <ProductNotesEditor
+                notes={formNotesI18n}
+                onChange={setFormNotesI18n}
+                draft={{
+                  id: editingProduct?.id ?? "draft",
+                  name: formName,
+                  brand: formBrand,
+                  category: formCategory,
+                  sku: formSku,
+                  color: formColor,
+                  compatiblePrinters: formCompatiblePrinters,
+                  isActive: formIsActive,
+                  specs: specsForCategory(formSpecs, formCategory),
+                }}
+              />
+
+              {/* Page address */}
               <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">ملاحظات (اختياري)</label>
-                <textarea
-                  rows={2}
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="مثال: يطبع ~1600 صفحة بتغطية 5%"
-                  className="w-full p-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                />
+                <label className="block text-[12px] font-semibold text-foreground mb-1">
+                  رابط صفحة المنتج <span className="text-muted-foreground font-normal">(اختياري — يُنشأ تلقائياً من الماركة والكود)</span>
+                </label>
+                <div dir="ltr" className="flex items-center rounded-md border border-border bg-muted/20 overflow-hidden">
+                  <span className="px-2.5 text-[11px] text-muted-foreground whitespace-nowrap">/compatibility/</span>
+                  <input
+                    type="text"
+                    value={formSlug}
+                    onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-"))}
+                    placeholder={`${formBrand}-${formSku || "code"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                    className="flex-1 h-9 px-2 bg-white dark:bg-background text-[12px] font-mono focus:outline-none"
+                  />
+                </div>
               </div>
 
               {/* Active Toggle */}

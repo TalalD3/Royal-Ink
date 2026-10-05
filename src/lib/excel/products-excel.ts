@@ -6,13 +6,81 @@ import type {
   PrinterBrand,
   ProductColor,
 } from "@/types/product";
+import type { ProductSpecs, SpecKey, LocalizedText } from "@/types/product";
 import { CATEGORIES_CONFIG, SUPPORTED_BRANDS } from "@/types/product";
+import { CATEGORY_SPECS, ENUM_VALUES, SPEC_FIELDS } from "@/i18n/specs";
+
+/* ── Spec, note and page-address columns ──
+   One column per spec key; the key in brackets makes re-imports exact. */
+const SPEC_KEYS = Object.keys(SPEC_FIELDS) as SpecKey[];
+const specHeader = (k: SpecKey) => `${SPEC_FIELDS[k].label.ar} (${k})`;
+const NOTE_HEADERS = { ar: "ملاحظة (AR)", fr: "Note (FR)", en: "Note (EN)" } as const;
+const SLUG_HEADER = "رابط الصفحة (slug)";
+
+function specColumns(p: Partial<Product>): Record<string, string> {
+  const out: Record<string, string> = {};
+  SPEC_KEYS.forEach((k) => {
+    out[specHeader(k)] = p.specs?.[k] ?? "";
+  });
+  return out;
+}
+
+function noteColumns(p: Partial<Product>): Record<string, string> {
+  return {
+    [NOTE_HEADERS.ar]: p.notesI18n?.ar ?? p.notes ?? "",
+    [NOTE_HEADERS.fr]: p.notesI18n?.fr ?? "",
+    [NOTE_HEADERS.en]: p.notesI18n?.en ?? "",
+    [SLUG_HEADER]: p.slug ?? "",
+  };
+}
+
+/** Enum cells may hold the key ("laser") or any of its labels ("ليزر", "Laser") */
+function normalizeSpecValue(k: SpecKey, raw: string): string {
+  const v = raw.trim();
+  const kind = SPEC_FIELDS[k].kind;
+  if (kind.type !== "enum") return v;
+  const low = v.toLowerCase();
+  const hit = kind.options.find(
+    (o) => o === low || Object.values(ENUM_VALUES[o] ?? {}).some((t) => t.toLowerCase() === low)
+  );
+  return hit ?? v;
+}
+
+/** Read the spec columns of one row (header "… (key)" or the French label) */
+function readSpecs(row: Record<string, any>, category: ProductCategory): ProductSpecs {
+  const allowed = new Set(CATEGORY_SPECS[category]);
+  const out: ProductSpecs = {};
+  Object.keys(row).forEach((header) => {
+    const m = header.match(/\((\w+)\)\s*$/);
+    const key = (m && SPEC_KEYS.includes(m[1] as SpecKey) ? m[1] : SPEC_KEYS.find((k) => SPEC_FIELDS[k].label.fr === header.trim())) as SpecKey | undefined;
+    if (!key || !allowed.has(key)) return;
+    const val = (row[header] ?? "").toString().trim();
+    if (val) out[key] = normalizeSpecValue(key, val);
+  });
+  return out;
+}
 
 /** Normalize Category from text */
 export function normalizeCategory(val: string): ProductCategory {
   const v = (val || "").toLowerCase().trim();
   if (v.includes("درام") || v.includes("drum") || v.includes("tambour") || v.includes("اسطوانة")) {
     return "drum_unit";
+  }
+  if (v.includes("فيوزر") || v.includes("fuser") || v.includes("fusion") || v.includes("تثبيت")) {
+    return "fuser";
+  }
+  if (v.includes("ريبون") || v.includes("ribbon") || v.includes("ruban") || v.includes("شريط")) {
+    return "ribbon";
+  }
+  if (
+    v.includes("نفث") ||
+    v.includes("inkjet") ||
+    v.includes("jet d'encre") ||
+    v.includes("cartridge") ||
+    v.includes("خراطيش") ||
+    v === "cartridge"
+  ) {
+    return "cartridge";
   }
   if (v.includes("قطع") || v.includes("غيار") || v.includes("piece") || v.includes("part")) {
     return "spare_parts";
@@ -78,6 +146,8 @@ export function exportProductsToExcel(products: Product[], filename = "royal_ink
     "الطابعات المتوافقة (مفصولة بفاصلة)": (p.compatiblePrinters || []).join(", "),
     "رابط الصورة (اختياري)": p.imageUrl || "",
     "ملاحظات / إنتاجية الصفحات": p.notes || "",
+    ...noteColumns(p),
+    ...specColumns(p),
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -98,6 +168,17 @@ export function exportProductsToExcel(products: Product[], filename = "royal_ink
   XLSX.utils.book_append_sheet(workbook, worksheet, "منتجات روايال إنك");
   XLSX.writeFile(workbook, filename);
 }
+
+/** Spec values for the template rows, in the same order as sampleData */
+const SAMPLE_SPECS: ProductSpecs[] = [
+  { printMode: "mono", technology: "laser", speedPpm: "38", paperSize: "A4", duplex: "yes", connectivity: "USB 2.0, Ethernet", compatibleSupply: "HP 59A (CF259A)" },
+  { oemRef: "CE285A", yieldPages: "1600", coverage: "5", technology: "laser" },
+  { oemRef: "CRG-725", yieldPages: "1600", coverage: "5", technology: "laser" },
+  { capacityMl: "65", yieldPages: "4500", inkType: "dye" },
+  { capacityMl: "65", yieldPages: "7500", inkType: "dye" },
+  { oemRef: "TN-2305", yieldPages: "2600", coverage: "5", technology: "laser" },
+  { oemRef: "DR-2305", yieldPages: "12000" },
+];
 
 /** Generate and download standard example template */
 export function downloadProductsTemplate() {
@@ -174,7 +255,9 @@ export function downloadProductsTemplate() {
     },
   ];
 
-  const worksheet = XLSX.utils.json_to_sheet(sampleData);
+  const worksheet = XLSX.utils.json_to_sheet(
+    sampleData.map((row, i) => ({ ...row, ...noteColumns({}), ...specColumns({ specs: SAMPLE_SPECS[i] }) }))
+  );
   worksheet["!cols"] = [
     { wch: 38 },
     { wch: 15 },
@@ -246,15 +329,26 @@ export async function parseProductsExcel(file: File): Promise<{
             .map((s: string) => s.trim())
             .filter(Boolean);
 
+          const category = normalizeCategory(categoryRaw.toString());
+          const notesI18n: LocalizedText = {};
+          (["ar", "fr", "en"] as const).forEach((l) => {
+            const v = (row[NOTE_HEADERS[l]] ?? "").toString().trim();
+            if (v) notesI18n[l] = v;
+          });
+          const slug = (row[SLUG_HEADER] ?? "").toString().trim().toLowerCase() || undefined;
+
           products.push({
             name: name.toString().trim(),
             brand: normalizeBrand(brandRaw.toString()),
-            category: normalizeCategory(categoryRaw.toString()),
+            category,
             sku: sku.toString().trim() || undefined,
             color: normalizeColor(colorRaw.toString()),
             compatiblePrinters,
             imageUrl: imageUrl.toString().trim() || undefined,
-            notes: notes.toString().trim() || undefined,
+            notes: notesI18n.ar || notes.toString().trim() || undefined,
+            notesI18n: notesI18n.ar || !notes ? notesI18n : { ...notesI18n, ar: notes.toString().trim() },
+            specs: readSpecs(row, category),
+            slug,
             isActive: true,
           });
         });

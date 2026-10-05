@@ -1,557 +1,777 @@
 "use client";
 
-import {
-  Target,
-  Lightbulb,
-  ShieldCheck,
-  Leaf,
-  HeadphonesIcon,
-  Truck,
-  RotateCcw,
-  Users,
-  Briefcase,
-  Trophy,
-  Globe,
-  ArrowDown,
-  Printer,
-  Building2,
-  Megaphone,
-  Rocket,
-  ChevronDown,
-  CheckCircle2,
-  Eye,
-  Crosshair,
-} from "lucide-react";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState, useEffect } from "react";
-import { GlowingEffect } from "@/components/ui/glowing-effect";
-import { RippleBackground } from "@/components/ui/interactive-ripple-background";
+import { motion } from "framer-motion";
+import {
+  ArrowDown,
+  ArrowLeft,
+  Building2,
+  Check,
+  Crosshair,
+  Headphones,
+  History,
+  Laptop,
+  Leaf,
+  Lightbulb,
+  Monitor,
+  Package,
+  Printer,
+  RotateCcw,
+  ScanLine,
+  Shield,
+  ShieldCheck,
+  Store,
+  Target,
+  Truck,
+  Wrench,
+} from "lucide-react";
+import { PageHero } from "@/components/ui/page-hero";
+import { BlockReveal } from "@/components/ui/block-reveal";
+import { JourneyScroll, type JourneyEra } from "@/components/ui/journey-scroll";
+import { ContactSplitCard } from "@/components/ui/contact-split-card";
 
-/* ══════════════════════════ MAIN PAGE ══════════════════════════ */
-export default function AboutPage() {
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: timelineRef,
-    offset: ["start 80%", "end 60%"],
-  });
-  const lineHeight = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+/* ══════════════════════════════════════════════════════════════════════
+   ABOUT PAGE — /about   (copy: "مقترح محتوى الموقع الإلكتروني")
 
-  const heroImages = [
-    "/images/ri1.jpg",
-    "/images/ri.jpg",
-    "/images/hero-office.jpg"
-  ];
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+   1. Header      — black block (title + three moments of the story) over
+                    a red figures strip
+   2. Journey     — the timeline, scrolled sideways (the page's centrepiece):
+                    two strands — printing and importing — meeting in 2022
+   3. Story       — who Titano Class / Royal Ink are, with the company card
+   4. Activities  — ROYALiNK supplies, global-brand devices, our clients
+   5. Vision & mission — the logo's two blocks, side by side
+   6. Values      — six commitments on a ruled sheet
+   7. Contact     — closing block
+   ══════════════════════════════════════════════════════════════════════ */
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
-    }, 4000); // 4 seconds
-    return () => clearInterval(interval);
-  }, []);
+/** Free Unsplash photos (Unsplash License) for the eras without our own */
+const U = (id: string) =>
+  `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1000&q=75`;
 
+const PRINTING = "مسار الطباعة";
+const IMPORTING = "مسار الاستيراد";
+
+const ERAS: JourneyEra[] = [
+  {
+    year: "2007",
+    path: PRINTING,
+    title: "البداية من ورشة منزلية",
+    text: "تعود جذور مؤسستنا إلى عام 2007، حين بدأ أحد مؤسسينا مسيرته في الطباعة من ورشة منزلية صغيرة. ومن التعامل اليومي مع الأجهزة والأحبار والخامات تشكّل إدراك عملي لما يحتاجه المهني، وما ينتظره من المنتج، وما يواجهه من تحديات أثناء الاستخدام.",
+    points: [
+      "ممارسة يومية للطباعة بمختلف مراحلها",
+      "فهم أثر المستلزمات في جودة العمل وكلفته",
+      "إدراك عملي لاحتياجات المهنيين",
+    ],
+    width: 84,
+    photos: [
+      {
+        src: "/images/timeline-workshop.jpg",
+        alt: "ورشة طباعة صغيرة فيها طابعة وخراطيش وأوراق اختبار",
+        caption: "الورشة المنزلية، 2007",
+        w: 46, h: 30, top: 9, right: 3, depth: 0.05,
+      },
+      {
+        src: "/images/ink-cartridges.jpg",
+        alt: "خراطيش حبر بالألوان الأربعة",
+        caption: "الأحبار والخامات",
+        w: 26, h: 19, top: 55, right: 60, depth: 0.12,
+      },
+    ],
+    quote: {
+      text: "بدأنا من شغف حقيقي بالطباعة...\nمن ورشة صغيرة إلى حلم كبير.",
+      author: "— المؤسس",
+      top: 56, right: 5, w: 40, depth: 0.1,
+    },
+  },
+  {
+    year: "2011",
+    path: PRINTING,
+    title: "ورشة طباعة متخصصة",
+    text: "تطور المشروع إلى افتتاح ورشة متخصصة عام 2011، واتسعت مجالات العمل لتشمل تقنيات متعددة في الطباعة. ومع كل تقنية جديدة تكاملت الممارسة التقنية مع فهم متطلبات الإنتاج واحتياجات العملاء، وتعمّقت المعرفة بأثر المستلزمات في جودة العمل واستمراريته.",
+    points: [
+      "تقنيات متعددة في الطباعة الاحترافية",
+      "فهم متطلبات الإنتاج واحتياجات العملاء",
+      "معرفة بأثر المستلزمات في استمرارية العمل",
+    ],
+    width: 80,
+    photos: [
+      {
+        src: U("photo-1693031630369-bd429a57f115"),
+        alt: "طابعة كبيرة الحجم تطبع لافتة",
+        caption: "الطباعة الرقمية، 2011",
+        w: 40, h: 28, top: 8, right: 2, depth: 0.06,
+      },
+      {
+        src: U("photo-1773525912476-213bff96b8a4"),
+        alt: "آلة طباعة بالشاشة الحريرية بحبر أصفر",
+        caption: "تقنيات طباعة متعددة",
+        w: 28, h: 21, top: 54, right: 30, depth: 0.14,
+      },
+      {
+        src: U("photo-1503694978374-8a2fa686963a"),
+        alt: "آلة طباعة أثناء العمل",
+        caption: "متطلبات الإنتاج",
+        w: 20, h: 26, top: 12, right: 62, depth: 0.06,
+      },
+    ],
+  },
+  {
+    year: "2012",
+    path: IMPORTING,
+    title: "خبرة في الاستيراد",
+    text: "بالتوازي مع مسار الطباعة، بدأ شريكنا المؤسس عام 2012 مساره في استيراد مستلزمات الإعلام الآلي. ومن هذه التجربة تراكمت معرفة بمتطلبات التوريد، وبناء العلاقات التجارية، وتطوير شبكات التوزيع — المعرفة التي تقوم عليها شبكتنا اليوم.",
+    points: [
+      "معرفة بمتطلبات التوريد",
+      "بناء العلاقات التجارية",
+      "تطوير شبكات التوزيع",
+    ],
+    width: 86,
+    photos: [
+      {
+        src: U("photo-1605732562742-3023a888e56e"),
+        alt: "حاويات شحن برتقالية مكدسة",
+        caption: "الاستيراد، 2012",
+        w: 30, h: 38, top: 6, right: 3, depth: 0.05,
+      },
+      {
+        src: "/images/hero-printers-supplies.jpg",
+        alt: "طابعة وعلب تونر وعبوات حبر",
+        caption: "مستلزمات الإعلام الآلي",
+        w: 36, h: 20, top: 9, right: 44, depth: 0.08,
+      },
+      {
+        src: U("photo-1590496793907-4d66e2994b4d"),
+        alt: "ميناء حاويات ورافعات عند الغروب",
+        caption: "التوريد",
+        w: 40, h: 24, top: 54, right: 44, depth: 0.1,
+      },
+    ],
+    quote: {
+      text: "خبرةٌ بدأت من ممارسة الطباعة،\nوتطورت إلى معرفة بالمنتج والسوق.",
+      author: "— تيتانو كلاس",
+      top: 60, right: 2, w: 36, depth: 0.12,
+    },
+  },
+  {
+    year: "2017",
+    path: "المساران",
+    title: "وكالة إشهار وشركة استيراد",
+    text: "في عام 2017 بلغ المساران مرحلة جديدة: تأسست وكالة اتصال وإشهار جمعت الممارسة التقنية بفهم احتياجات العملاء في الطباعة والإشهار، وأسّس شريكنا شركة متخصصة في استيراد مستلزمات الطباعة، أسهمت في تطوير علامة رسّخت حضورها في السوق الجزائري.",
+    points: [
+      "وكالة اتصال وإشهار — مسار الطباعة",
+      "شركة لاستيراد مستلزمات الطباعة — مسار الاستيراد",
+      "علامة رسّخت حضورها في السوق الجزائري",
+    ],
+    width: 78,
+    photos: [
+      {
+        src: U("photo-1561070791-2526d30994b5"),
+        alt: "دليل ألوان وعينات تصميم",
+        caption: "الاتصال والإشهار، 2017",
+        w: 42, h: 28, top: 8, right: 2, depth: 0.06,
+      },
+      {
+        src: U("photo-1572044162444-ad60f128bdea"),
+        alt: "مصمم يعمل على لوح رسم رقمي",
+        caption: "احتياجات العملاء",
+        w: 26, h: 20, top: 55, right: 8, depth: 0.12,
+      },
+      {
+        src: U("photo-1758183961426-88d64eb5f787"),
+        alt: "آلة طباعة صناعية بأسطوانات حبر",
+        caption: "مستلزمات الطباعة",
+        w: 24, h: 28, top: 50, right: 62, depth: 0.1,
+      },
+    ],
+  },
+  {
+    year: "2022",
+    path: "المساران معاً",
+    title: "ميلاد تيتانو كلاس وروايال إنك",
+    text: "في عام 2022 اجتمعت المسيرتان لتأسيس تيتانو كلاس بمدينة العلمة، ولاية سطيف، على قاعدة تجمع الخبرة الفنية في الطباعة والخبرة التجارية في استيراد مستلزماتها. ومن هذا المسار وُلدت روايال إنك، علامتنا الجزائرية المسجلة في مستلزمات الطباعة المتوافقة.",
+    points: [
+      "جودة الطباعة واستقرار الأداء",
+      "المردود الفعلي والتوافق مع الأجهزة",
+      "شبكة توزيع تصل إلى أغلب ولايات الوطن",
+    ],
+    width: 96,
+    dark: true,
+    photos: [
+      {
+        src: "/images/store-el-eulma.jpg",
+        alt: "واجهة متجر روايال إنك في العلمة",
+        caption: "متجرنا في العلمة، سطيف",
+        w: 44, h: 30, top: 8, right: 2, depth: 0.06,
+        position: "50% 35%",
+      },
+      {
+        src: "/images/ri.jpg",
+        alt: "خرطوشة روايال إنك بلون الماجنتا",
+        caption: "العلامة المسجلة",
+        w: 24, h: 24, top: 10, right: 56, depth: 0.08,
+      },
+      {
+        src: "/images/algeria-distribution-cover.jpg",
+        alt: "خريطة شبكة التوزيع من سطيف إلى ولايات الوطن",
+        caption: "شبكة التوزيع الوطنية",
+        w: 36, h: 20, top: 54, right: 50, depth: 0.1,
+      },
+    ],
+    quote: {
+      text: "اجتمعت المسيرتان\nلتأسيس علامة يطلبها\nالمستخدم بالاسم.",
+      author: "— روايال إنك",
+      top: 54, right: 4, w: 36, depth: 0.1,
+    },
+  },
+];
+
+/* Header visual: three moments of the story, uncovered one after the
+   other — a preview of the timeline below */
+const MOMENTS = [
+  { src: "/images/timeline-workshop.jpg", year: "2007", label: "الورشة" },
+  { src: "/images/hero-printers-supplies.jpg", year: "2012", label: "الاستيراد" },
+  { src: "/images/ri.jpg", year: "2022", label: "روايال إنك" },
+];
+
+function AboutHeroVisual() {
   return (
-    <div className="flex flex-col bg-background">
-      {/* ═══════════════ HERO ═══════════════ */}
-      <section className="relative w-full min-h-[75vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <AnimatePresence mode="popLayout">
-            <motion.div
-              key={currentImageIndex}
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              className="absolute inset-0"
-            >
-              <Image src={heroImages[currentImageIndex]} alt="Royal Ink Headquarters" fill className="object-cover" priority />
-            </motion.div>
-          </AnimatePresence>
-          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-background" />
-        </div>
-        <div className="container relative z-10 mx-auto px-4 text-center">
-          <motion.span initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="inline-block text-sm font-semibold tracking-[0.2em] uppercase text-white/70 mb-6 border border-white/20 rounded-full px-5 py-2 backdrop-blur-sm">
-            من نحن
-          </motion.span>
-          <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.15 }} className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-tight">
-            نبتكر اليوم<br />
-            <span className="bg-gradient-to-l from-red-500 to-rose-400 bg-clip-text text-transparent">نلهم الغد</span>
-          </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }} className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-12 leading-relaxed">
-            خبرة بدأت من ممارسة الطباعة، وتطورت إلى معرفة بالمنتج والسوق، لتؤسس رؤيتنا للأعمال.
-          </motion.p>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="flex justify-center mt-8">
-            <div className="flex gap-2 mb-6">
-              {heroImages.map((_, i) => (
-                <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i === currentImageIndex ? "w-8 bg-primary" : "w-2 bg-white/30"}`} />
-              ))}
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 1 }} className="flex justify-center">
-            <div className="animate-bounce p-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white cursor-pointer hover:bg-white/20 transition-colors">
-              <ArrowDown size={22} />
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════ STATS BAR ═══════════════ */}
-      <section className="relative z-20 -mt-20 container mx-auto px-4 mb-12">
-        <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.7 }} className="relative rounded-[2.5rem] border border-white/10 p-1 md:p-2 bg-[#1a1a1a] max-w-5xl mx-auto">
-          <GlowingEffect blur={0} spread={40} proximity={64} inactiveZone={0.01} borderWidth={2.5} glow={true} disabled={false} />
-          
-          <div className="relative bg-[#1a1a1a] text-white rounded-[2rem] shadow-2xl p-6 md:p-8 overflow-hidden z-10 h-full">
-            {/* Subtle background glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-full bg-primary/10 blur-[100px] pointer-events-none" />
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-10 relative z-10 lg:divide-x lg:divide-x-reverse lg:divide-white/10">
-            <StatCard icon={<Users className="w-6 h-6" />} number="15+" label="سنة من الخبرة" />
-            <StatCard icon={<Briefcase className="w-6 h-6" />} number="1000+" label="عميل وموزع" />
-            <StatCard icon={<Trophy className="w-6 h-6" />} number="4" label="شهادات جودة" />
-            <StatCard icon={<Globe className="w-6 h-6" />} number="58" label="ولاية مغطاة" />
-          </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ═══════════════ COMPANY STORY ═══════════════ */}
-      <section className="pt-12 pb-24 container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="max-w-5xl mx-auto"
-        >
-          {/* Section label with decorative line */}
-          <div className="flex items-center justify-center gap-4 mb-10">
-            <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/40" />
-            <span className="text-sm font-bold tracking-[0.2em] uppercase text-primary">قصتنا</span>
-            <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/40" />
-          </div>
-
-          {/* Story card */}
-          <div className="relative rounded-[2.5rem] border border-border/40 p-1 md:p-2">
-            <GlowingEffect blur={0} spread={40} proximity={64} inactiveZone={0.01} borderWidth={2.5} glow={true} disabled={false} />
-            <div className="relative bg-card/60 backdrop-blur-sm rounded-[2rem] p-10 md:p-16 text-center overflow-hidden z-10">
-              {/* Decorative quote mark */}
-              <div className="absolute top-6 right-10 text-[120px] leading-none font-serif text-primary/[0.06] select-none pointer-events-none">"</div>
-
-            <p className="text-lg md:text-xl text-muted-foreground leading-[2.1] max-w-3xl mx-auto relative z-10">
-              <span className="font-bold text-foreground text-xl md:text-2xl">تيتانو كلاس</span> شركة جزائرية
-              متخصصة في استيراد الطابعات ومستلزماتها، وصاحبة العلامة المسجلة{" "}
-              <span className="font-bold text-primary text-xl md:text-2xl">روايال إنك</span>.
-            </p>
-            
-            {/* Decorative separator */}
-            <div className="flex items-center justify-center gap-2 my-8">
-              <div className="h-px w-8 bg-primary/30" />
-              <div className="w-2 h-2 rounded-full bg-primary/40" />
-              <div className="h-px w-8 bg-primary/30" />
-            </div>
-
-            <p className="text-base md:text-lg text-muted-foreground leading-[2] max-w-3xl mx-auto relative z-10">
-              وبفضل خبرة مؤسسيها في الطباعة والاستيراد، طوّرت الشركة قاعدة عملاء راسخة تضم تجار الجملة والموزعين وأصحاب الصفقات العمومية، وعزّزت حضور منتجاتها في معظم ولايات الوطن عبر شبكة تجارية واسعة.
-            </p>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ═══════════════ TIMELINE ═══════════════ */}
-      <section className="py-24 relative overflow-hidden" ref={timelineRef}>
-        <RippleBackground />
-        <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-muted/50 to-muted/30" />
-        <div className="container relative z-10 mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-24">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/40" />
-              <span className="text-sm font-bold tracking-[0.2em] uppercase text-primary">مسيرتنا</span>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/40" />
-            </motion.div>
-            <motion.h3 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-extrabold mb-4">رحلة النمو والتطور</motion.h3>
-            <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-muted-foreground text-base md:text-lg">من ورشة صغيرة عام 2007 إلى علامة وطنية رائدة</motion.p>
-          </div>
-
-          <div className="max-w-5xl mx-auto relative">
-            <div className="timeline-track absolute top-0 bottom-0 w-[3px] bg-border/50 rounded-full left-1/2 -translate-x-1/2 z-0" />
-            <motion.div
-              className="timeline-fill absolute top-0 w-[3px] rounded-full left-1/2 -translate-x-1/2 origin-top z-0"
-              style={{ height: lineHeight, background: "linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--primary) / 0.3))" }}
-            />
-
-            <div className="flex flex-col gap-16 md:gap-20">
-              <TimelineMilestone
-                year="2007"
-                title="البداية الأولى"
-                description="بدأ أحد مؤسسينا مسيرته في الطباعة من ورشة منزلية صغيرة. كان الشغف بالطباعة هو الدافع الأول للتعلم والإتقان."
-                expandedDetails={[
-                  "بداية العمل من ورشة منزلية بإمكانيات محدودة",
-                  "التعلم الذاتي لتقنيات الطباعة المختلفة",
-                  "بناء أولى العلاقات مع العملاء المحليين",
-                  "اكتساب معرفة عميقة بأنواع الأحبار والمستلزمات",
-                ]}
-                icon={<Printer className="w-5 h-5" />}
-                image="/images/timeline-workshop.jpg"
-                side="right"
-              />
-              <TimelineMilestone
-                year="2011"
-                title="تأسيس ورشة متخصصة"
-                description="تطور المشروع إلى افتتاح ورشة متخصصة، واتسعت مجالات العمل لتشمل تقنيات متعددة في الطباعة الاحترافية."
-                expandedDetails={[
-                  "افتتاح ورشة طباعة احترافية مجهزة بالكامل",
-                  "إتقان تقنيات الطباعة الرقمية والحرارية",
-                  "توسيع قاعدة العملاء لتشمل المؤسسات والشركات",
-                  "فهم معمّق للآلات والمنتجات وسلوك السوق",
-                ]}
-                icon={<Building2 className="w-5 h-5" />}
-                side="left"
-              />
-              <TimelineMilestone
-                year="2017"
-                title="وكالة اتصال وإشهار"
-                description="بفضل الخبرة المتراكمة وثقة العملاء، تطور عملنا وصولاً إلى تأسيس وكالة اتصال وإشهار تقدم حلولاً إبداعية وطباعية متكاملة."
-                expandedDetails={[
-                  "تأسيس وكالة متكاملة للاتصال والإشهار",
-                  "تقديم خدمات التصميم والطباعة في حزمة واحدة",
-                  "اكتساب خبرة تجارية في التعامل مع المشاريع الكبرى",
-                  "بناء شبكة علاقات واسعة في قطاع الإعلام والاتصال",
-                ]}
-                icon={<Megaphone className="w-5 h-5" />}
-                side="right"
-              />
-              <TimelineMilestone
-                year="2022"
-                title="ميلاد تيتانو كلاس وروايال إنك"
-                description="اجتمعت المسيرتان لتأسيس شركة 'تيتانو كلاس'، على قاعدة تجمع الخبرة الفنية في الطباعة والخبرة التجارية في الاستيراد."
-                expandedDetails={[
-                  "تأسيس شركة تيتانو كلاس بمدينة العلمة، ولاية سطيف",
-                  "إطلاق العلامة المسجلة 'روايال إنك' للمستلزمات المتوافقة",
-                  "بناء شبكة توزيع تغطي أغلب ولايات الوطن",
-                  "شراكات مع مصانع عالمية لضمان الجودة والتوافق",
-                  "تصنيف كمرجع في مستلزمات الطباعة المتوافقة",
-                ]}
-                icon={<Rocket className="w-5 h-5" />}
-                image="/images/ink-cartridges.jpg"
-                side="left"
-                highlight
-              />
-            </div>
-          </div>
-
-          {/* Toggle to interactive timeline */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-center mt-16"
+    <div className="ri-crop ri-crop-light grid grid-cols-3 gap-2 sm:gap-3">
+      {MOMENTS.map((m, i) => (
+        <figure key={m.year}>
+          <BlockReveal
+            immediate
+            delay={0.2 + i * 0.15}
+            className="aspect-[3/4] bg-white/10"
           >
-            <Link
-              href="/about/timeline"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary border border-primary/30 rounded-full px-6 py-3 hover:bg-primary/10 transition-all hover:-translate-y-0.5 shadow-sm hover:shadow-md hover:shadow-primary/10"
+            <Image
+              src={m.src}
+              alt={m.label}
+              fill
+              priority
+              sizes="(min-width: 1024px) 18vw, 32vw"
+              className="object-cover"
+            />
+          </BlockReveal>
+          <figcaption className="mt-3 flex items-center gap-2 text-xs font-bold text-white/60 sm:text-sm">
+            <span aria-hidden="true" className="h-1.5 w-1.5 bg-brand-red" />
+            <span dir="ltr" className="text-white">{m.year}</span>
+            {m.label}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  );
+}
+
+/* Company card — the facts, printed like a product label */
+const FACTS = [
+  { k: "الشركة", v: "تيتانو كلاس" },
+  { k: "العلامة المسجلة", v: "روايال إنك" },
+  { k: "المقر", v: "العلمة، ولاية سطيف" },
+  { k: "التأسيس", v: "2022" },
+  { k: "النشاط", v: "استيراد الطابعات ومستلزماتها" },
+  { k: "الخبرة", v: "في الطباعة منذ 2007" },
+];
+
+/* What ROYALiNK supplies cover */
+const SUPPLIES = [
+  "عبوات الأحبار",
+  "خراطيش الحبر والتونر",
+  "مساحيق التونر",
+  "أشرطة التحبير",
+  "وحدات الدرام والفيوزر",
+  "قطع الغيار",
+];
+
+const DEVICES = [
+  { icon: Printer, label: "طابعات" },
+  { icon: ScanLine, label: "ماسحات ضوئية" },
+  { icon: Monitor, label: "حواسيب مكتبية" },
+  { icon: Laptop, label: "حواسيب محمولة" },
+];
+
+const CLIENTS = [
+  { icon: Building2, label: "المؤسسات الإدارية والاقتصادية" },
+  { icon: Shield, label: "الهيئات الأمنية ووحدات الجيش الوطني الشعبي" },
+  { icon: Package, label: "موزعو الجملة" },
+  { icon: Printer, label: "قاعات الطباعة المحترفة" },
+  { icon: Wrench, label: "حرفيو الصيانة" },
+  { icon: Store, label: "أصحاب المحلات، ولا سيما المكتبات ومحلات أجهزة الإعلام الآلي" },
+];
+
+const VALUES: {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  link?: { href: string; label: string };
+}[] = [
+  {
+    icon: ShieldCheck,
+    title: "جودة ثابتة",
+    desc: "تبدأ العناية بجودة منتجات روايال إنك أثناء التصنيع، حيث يسحب المصنع عينات عشوائية لاختبار وضوح المطبوعات ودقة الألوان ولمعانها، وتقييم الأداء تحت ظروف الحرارة والبرودة، وقياس المردود الطباعي في ظروف الاختبار. وتحمل عبواتنا إشارة إلى معيار ISO 9001 لإدارة الجودة، إلى جانب هذه الاختبارات العملية لمتابعة جودة الإنتاج.",
+    link: { href: "/quality", label: "مراحل مراقبة الجودة" },
+  },
+  {
+    icon: Target,
+    title: "خبرة تقنية وتوافق مدروس",
+    desc: "تستند إلى خبرة تتجاوز 16 عاماً في مجال الطباعة لفهم احتياجات المستخدمين والمهنيين واختيار المستلزمات المناسبة لها. وتخضع منتجاتنا لاختبارات فعلية على طابعات قبل اعتمادها وتصديرها، مع توضيح المراجع المتوافقة على العبوات لتسهيل الاختيار وتجنب استخدام مستلزم غير مناسب.",
+    link: { href: "/compatibility", label: "دليل التوافق" },
+  },
+  {
+    icon: Leaf,
+    title: "مسؤولية بيئية",
+    desc: "نهتم بالجوانب البيئية المرتبطة بمستلزمات الطباعة واستخدامها. وتتضمن العلامات المطبوعة على عبواتنا ISO 14001 للإدارة البيئية و REACH و RoHS المرتبطين بمتطلبات المواد الكيميائية وتقييد مواد معينة. ونشجع الاستخدام السليم وترشيد الاستهلاك للحد من الهدر.",
+  },
+  {
+    icon: Headphones,
+    title: "دعم خبير",
+    desc: "نساعد عملاءنا وشركاءنا على تحديد المستلزم المناسب لطابعاتهم، ونقدم توجيهاً عملياً بشأن التوافق والاستخدام. ويوفر موقعنا جهات اتصال مخصصة للاستفسارات، إلى جانب قسم للأسئلة الشائعة يقدم إجابات واضحة عن اختيار المنتجات واستخدامها.",
+    link: { href: "/contact", label: "تواصل معنا" },
+  },
+  {
+    icon: Truck,
+    title: "شبكة توزيع وطنية",
+    desc: "تتوفر منتجات روايال إنك في أغلب ولايات الوطن عبر شبكة من الموزعين والوسطاء ونقاط البيع. ولتسهيل الوصول إليها، تعرض خريطة نقاط البيع على موقعنا مواقعها وبيانات الاتصال بها، لتساعدكم على العثور على أقرب بائع.",
+    link: { href: "/find-us", label: "خريطة نقاط البيع" },
+  },
+  {
+    icon: RotateCcw,
+    title: "ثقة ومتابعة",
+    desc: "نحرص على وضوح التعامل ومتابعة ملاحظات عملائنا بعد الشراء، ونلتزم باستبدال المنتج ذي العيب الصناعي في اليوم نفسه الذي نستلمه فيه. فرغم اختبارات مراقبة الجودة، قد تظهر عيوب صناعية بنحو 1% من المنتجات المصنعة، ويأتي التزامنا بالاستبدال لضمان معالجة هذه الحالات بسرعة والحفاظ على ثقتكم.",
+  },
+];
+
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.5, ease: "easeOut" },
+} as const;
+
+/* Section heading: eyebrow + title on one side, a short line on the other */
+function SectionHead({
+  eyebrow,
+  title,
+  lead,
+}: {
+  eyebrow: string;
+  title: string;
+  lead: string;
+}) {
+  return (
+    <motion.div
+      {...fadeUp}
+      className="mb-10 flex flex-col gap-4 md:mb-14 lg:flex-row lg:items-end lg:justify-between lg:gap-16"
+    >
+      <div className="max-w-2xl">
+        <p className="ri-eyebrow mb-4">{eyebrow}</p>
+        <h2 className="ri-h2">{title}</h2>
+      </div>
+      <p className="ri-lead max-w-md">{lead}</p>
+    </motion.div>
+  );
+}
+
+/* One block of the vision / mission pair */
+function Aim({
+  icon: Icon,
+  title,
+  text,
+  points,
+  tone,
+}: {
+  icon: React.ElementType;
+  title: string;
+  text: string;
+  points: string[];
+  tone: "red" | "black";
+}) {
+  const onRed = tone === "red";
+  return (
+    <div
+      className={`relative isolate p-7 sm:p-10 lg:p-12 ${
+        onRed ? "bg-brand-red" : "bg-brand-black"
+      }`}
+    >
+      {!onRed && (
+        <div
+          aria-hidden="true"
+          className="ri-raster pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_right,#000,transparent_70%)]"
+        />
+      )}
+      <span
+        className={`flex h-12 w-12 items-center justify-center ${
+          onRed ? "bg-white text-brand-red" : "bg-brand-red text-white"
+        }`}
+      >
+        <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
+      </span>
+      <h3 className="mt-6 text-2xl font-extrabold sm:text-[1.75rem]">{title}</h3>
+      <p
+        className={`mt-4 text-[15px] leading-8 sm:text-base sm:leading-8 ${
+          onRed ? "text-white" : "text-white/80"
+        }`}
+      >
+        {text}
+      </p>
+      <ul className={`mt-6 space-y-3 border-t pt-6 ${onRed ? "border-white/30" : "border-white/15"}`}>
+        {points.map((p) => (
+          <li key={p} className="flex items-center gap-3 text-sm font-bold">
+            <span
+              className={`flex h-5 w-5 shrink-0 items-center justify-center ${
+                onRed ? "bg-white text-brand-red" : "bg-brand-red text-white"
+              }`}
             >
-              شاهد مسيرتنا التفاعلية
-              <ArrowDown className="w-4 h-4 rotate-[-90deg]" />
+              <Check className="h-3 w-3" strokeWidth={3.5} aria-hidden="true" />
+            </span>
+            {p}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* A cell on a ruled sheet: black fill rising on hover, the icon tile
+   turning red (same behaviour as the home categories) */
+function RuledCell({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      {...fadeUp}
+      transition={{ ...fadeUp.transition, delay }}
+      className={`group relative isolate bg-white ${className ?? ""}`}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-brand-black transition-transform duration-300 ease-out group-hover:scale-y-100 motion-reduce:transition-none"
+      />
+      {children}
+    </motion.div>
+  );
+}
+
+const tile =
+  "flex h-12 w-12 shrink-0 items-center justify-center bg-brand-mist text-brand-black transition-colors duration-300 group-hover:bg-brand-red group-hover:text-white";
+
+export default function AboutPage() {
+  return (
+    <div className="flex min-h-screen flex-col bg-white">
+      {/* 1. HEADER */}
+      <PageHero
+        crumb="من نحن"
+        eyebrow="من نحن"
+        title="نبتكر اليوم، نلهم الغد"
+        lead="خبرةٌ بدأت من ممارسة الطباعة، وتطورت إلى معرفة بالمنتج والسوق، لتؤسس رؤيتنا للأعمال."
+        visual={<AboutHeroVisual />}
+        figures={[
+          { value: "16+", label: "سنة من الخبرة" },
+          { value: "1000+", label: "عميل وموزع" },
+          { value: "58", label: "ولاية يصلها التوصيل" },
+        ]}
+      />
+
+      {/* 2. JOURNEY */}
+      <JourneyScroll
+        eras={ERAS}
+        intro={
+          <>
+            <p className="ri-eyebrow mb-5">مسيرتنا</p>
+            <h2 className="text-[2rem] font-extrabold leading-[1.25] text-brand-black sm:text-[2.5rem] lg:text-[3.25rem]">
+              رحلة النمو والتطور
+            </h2>
+            <p className="ri-lead mt-5">
+              خبرةٌ بدأت من ممارسة الطباعة، وتطورت إلى معرفة بالمنتج والسوق.
+              هذه قصة مسارين: مسار في الطباعة بدأ من ورشة منزلية صغيرة، ومسار
+              في استيراد مستلزماتها — التقيا عام <span dir="ltr">2022</span>{" "}
+              لتأسيس تيتانو كلاس وعلامتها روايال إنك.
+            </p>
+            {/* The two strands, as a legend for the labels on each year */}
+            <dl className="mt-7 grid max-w-md grid-cols-2 border-t border-brand-line pt-5 text-sm">
+              <div>
+                <dt className="font-extrabold text-brand-black">{PRINTING}</dt>
+                <dd className="mt-1 text-brand-gray">
+                  منذ <span dir="ltr">2007</span>
+                </dd>
+              </div>
+              <div className="border-s border-brand-line ps-5">
+                <dt className="font-extrabold text-brand-black">{IMPORTING}</dt>
+                <dd className="mt-1 text-brand-gray">
+                  منذ <span dir="ltr">2012</span>
+                </dd>
+              </div>
+            </dl>
+          </>
+        }
+        outro={
+          <>
+            <p className="ri-eyebrow ri-eyebrow-onred mb-5">اليوم</p>
+            <h2 className="text-[2rem] font-extrabold leading-[1.25] sm:text-[2.5rem] lg:text-[3rem]">
+              رحلتنا مستمرة
+            </h2>
+            <p className="mt-5 text-base font-medium leading-8 sm:text-lg sm:leading-9">
+              نستند اليوم إلى شبكة تجارية قوية تضم تجار الجملة والموزعين ونقاط
+              البيع، تصل من خلالها منتجاتنا إلى أغلب ولايات الوطن. ونواصل توسيع
+              هذا الحضور عبر شراكات طويلة الأمد تقوم على الثقة المتبادلة — فخبرتنا
+              التي بدأت من الميدان تظل مرجعنا.
+            </p>
+            <p className="mt-10 inline-flex items-center gap-3 text-sm font-bold text-white/85">
+              <span className="flex h-10 w-10 items-center justify-center border border-white/40">
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+              </span>
+              تابع لاكتشاف قصتنا
+            </p>
+          </>
+        }
+      />
+
+      {/* 3. STORY */}
+      <section className="bg-brand-mist py-16 md:py-24">
+        <div className="container mx-auto grid grid-cols-1 items-center gap-10 px-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
+          <motion.div {...fadeUp}>
+            <p className="ri-eyebrow mb-6">قصتنا</p>
+            <p className="text-[1.5rem] font-extrabold leading-[1.6] text-brand-black md:text-[2rem] lg:text-[2.25rem]">
+              تيتانو كلاس شركة جزائرية متخصصة في استيراد الطابعات ومستلزماتها،
+              وصاحبة العلامة المسجلة{" "}
+              <span className="text-brand-red">روايال إنك</span>.
+            </p>
+            <div className="ri-lead mt-6 max-w-2xl space-y-4">
+              <p>
+                وبفضل خبرة مؤسسيها في الطباعة والاستيراد، طوّرت الشركة قاعدة
+                عملاء راسخة تضم تجار الجملة والموزعين وأصحاب الصفقات العمومية،
+                وعزّزت حضور منتجاتها في معظم ولايات الوطن عبر شبكة تجارية واسعة.
+              </p>
+              <p>
+                وتُعدّ روايال إنك إحدى أبرز ثمار هذا المسار؛ نجسّد من خلالها
+                اهتمامنا بجودة الطباعة واستقرار الأداء والمردود الفعلي والتوافق
+                مع الأجهزة — وهي معايير نعرف أهميتها من واقع الاستخدام، ونضعها في
+                صميم اختياراتنا.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Company card */}
+          <motion.div {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }} className="ri-crop">
+            <dl className="ri-strip bg-white">
+              <div className="flex items-center justify-between px-6 pb-4 pt-6">
+                <span className="text-sm font-extrabold text-brand-black">بطاقة الشركة</span>
+                <span
+                  dir="ltr"
+                  className="bg-brand-black px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-white"
+                >
+                  RI
+                </span>
+              </div>
+              {FACTS.map((f) => (
+                <div
+                  key={f.k}
+                  className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 border-t border-brand-line px-6 py-4"
+                >
+                  <dt className="text-sm text-brand-gray">{f.k}</dt>
+                  <dd className="text-sm font-extrabold text-brand-black">{f.v}</dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href="/find-us#visit"
+              className="group flex items-center justify-between gap-4 bg-brand-black px-6 py-4 text-sm font-extrabold text-white transition-colors hover:bg-brand-red"
+            >
+              زوروا متجرنا في العلمة
+              <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" aria-hidden="true" />
             </Link>
           </motion.div>
         </div>
       </section>
 
-      {/* ═══════════════ VISION & MISSION ═══════════════ */}
-      <section className="py-32 relative overflow-hidden">
-        {/* Animated background blobs */}
-        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-primary/[0.04] rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: "8s" }} />
-        <div className="absolute bottom-20 left-0 w-[400px] h-[400px] bg-blue-500/[0.04] rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDuration: "10s" }} />
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-20">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/40" />
-              <span className="text-sm font-bold tracking-[0.2em] uppercase text-primary">رؤيتنا ومهمتنا</span>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/40" />
-            </motion.div>
-            <motion.h3 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-extrabold mb-4">ما نسعى لتحقيقه</motion.h3>
-            <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-muted-foreground text-base md:text-lg">الأسس التي نبني عليها مستقبل روايال إنك</motion.p>
-          </div>
-
-          {/* Vision Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="max-w-6xl mx-auto mb-10"
-          >
-            <div className="relative rounded-[2.5rem] p-1 md:p-2 group glass-card-vision">
-              <GlowingEffect blur={0} spread={40} proximity={64} inactiveZone={0.01} borderWidth={2.5} glow={true} disabled={false} />
-
-              <div className="relative bg-card/80 backdrop-blur-xl rounded-[2rem] border border-white/10 overflow-hidden z-10 h-full">
-                <div className="grid lg:grid-cols-2 gap-0">
-                  {/* Image side */}
-                  <div className="relative h-64 lg:h-auto lg:min-h-[420px] overflow-hidden">
-                    <Image src="/images/hero-office.jpg" alt="رؤيتنا" fill className="object-cover group-hover:scale-105 transition-transform duration-1000" />
-                    <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/30 to-transparent lg:bg-gradient-to-r" />
-                  </div>
-
-                  {/* Text side */}
-                  <div className="p-8 md:p-12 lg:p-14 flex flex-col justify-center">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500">
-                      <Lightbulb className="w-7 h-7" />
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-extrabold mb-5 text-foreground">
-                      رؤيتنا
-                    </h2>
-                    <p className="text-base md:text-lg text-muted-foreground leading-[1.9] mb-8">
-                      أن تكون <strong className="text-primary">روايال إنك</strong> الخيار الأول لمستلزمات الطباعة المتوافقة في الجزائر؛ علامة يطلبها المستخدم بالاسم ثقةً في جودتها، ويعتمد عليها المهني لاستقرار أدائها.
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      {["الخيار الأول في السوق الجزائري", "جودة يثق بها المستخدم", "أداء مستقر يعتمد عليه المهني"].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                          <span className="text-sm text-muted-foreground">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Mission Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="max-w-6xl mx-auto"
-          >
-            <div className="relative rounded-[2.5rem] p-1 md:p-2 group">
-              <GlowingEffect blur={0} spread={40} proximity={64} inactiveZone={0.01} borderWidth={2.5} glow={true} disabled={false} />
-
-              <div className="relative bg-card/80 backdrop-blur-xl rounded-[2rem] border border-white/10 overflow-hidden z-10 h-full">
-                <div className="grid lg:grid-cols-2 gap-0">
-                  {/* Text side (reversed order on desktop) */}
-                  <div className="p-8 md:p-12 lg:p-14 flex flex-col justify-center order-2 lg:order-1">
-                    <div className="w-14 h-14 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all duration-500">
-                      <Crosshair className="w-7 h-7" />
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-extrabold mb-5 text-foreground">
-                      مهمتنا
-                    </h2>
-                    <p className="text-base md:text-lg text-muted-foreground leading-[1.9] mb-8">
-                      أن نمنح عملاءنا الثقة في اختيار ما يناسب أعمالهم من الطابعات ومستلزماتها، بتوظيف خبرتنا الميدانية في توفير منتجات تجمع بين جودة الطباعة وكفاءة الاستخدام.
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      {["توجيه العملاء نحو الخيار الأنسب", "منتجات تجمع الجودة وكفاءة الاستخدام", "ترسيخ ثقة المستخدمين بمنتجاتنا"].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                          <span className="text-sm text-muted-foreground">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Image side */}
-                  <div className="relative h-64 lg:h-auto lg:min-h-[420px] overflow-hidden order-1 lg:order-2">
-                    <Image src="/images/ink-cartridges.jpg" alt="مهمتنا" fill className="object-cover group-hover:scale-105 transition-transform duration-1000" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent lg:bg-gradient-to-l" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════ VALUES ═══════════════ */}
-      <section className="py-32 bg-muted/30">
+      {/* 4. ACTIVITIES & PRODUCTS */}
+      <section className="bg-white py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex items-center justify-center gap-4 mb-6">
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary/40" />
-              <span className="text-sm font-bold tracking-[0.2em] uppercase text-primary">ما يميزنا</span>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary/40" />
-            </motion.div>
-            <motion.h3 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-3xl md:text-5xl font-extrabold mb-4">قيمنا ومزايانا التنافسية</motion.h3>
-            <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-muted-foreground text-base md:text-lg">التزامات نعمل بها يومياً لخدمة عملائنا وشركائنا</motion.p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {valuesData.map((v, i) => (
-              <ValueCard key={v.title} index={i} {...v} />
+          <SectionHead
+            eyebrow="مجالات عملنا ومنتجاتنا"
+            title="مستلزمات بعلامتنا، وأجهزة من علامات عالمية"
+            lead="تشكيلة تغطي متطلبات الطباعة اليومية والمهنية والصيانة، إلى جانب أجهزة العمل المكتبي."
+          />
+
+          <motion.div
+            {...fadeUp}
+            className="ri-crop grid grid-cols-1 text-white lg:grid-cols-[minmax(0,64fr)_minmax(0,36fr)]"
+          >
+            {/* ROYALiNK supplies, on black */}
+            <div className="relative isolate bg-brand-black p-7 sm:p-10 lg:p-12">
+              <div
+                aria-hidden="true"
+                className="ri-raster pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_right,#000,transparent_70%)]"
+              />
+              <p dir="ltr" className="text-right text-sm font-extrabold tracking-[0.18em]">
+                ROYAL<span className="text-brand-red">iNK</span>
+              </p>
+              <h3 className="mt-3 text-2xl font-extrabold sm:text-[1.75rem]">
+                مستلزمات الطباعة بعلامة <span dir="ltr">ROYALiNK</span>
+              </h3>
+              <p className="mt-4 max-w-2xl text-[15px] leading-8 text-white/80 sm:text-base">
+                تتخصص <span dir="ltr">ROYALiNK</span> في توفير مستلزمات الطباعة
+                تحت علامتها، بتشكيلة تغطي متطلبات الطباعة اليومية والمهنية
+                والصيانة.
+              </p>
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {SUPPLIES.map((s) => (
+                  <li
+                    key={s}
+                    className="inline-flex items-center gap-2 bg-white/10 px-3.5 py-2 text-sm font-bold"
+                  >
+                    <span aria-hidden="true" className="h-1.5 w-1.5 bg-brand-red" />
+                    {s}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-7 flex items-start gap-3 border-t border-white/15 pt-6 text-sm leading-7 text-white/80">
+                <History className="mt-1 h-4 w-4 shrink-0 text-brand-red" aria-hidden="true" />
+                ونواصل توفير مستلزمات الأجهزة القديمة لمساعدة مستخدميها على
+                إبقائها قيد التشغيل.
+              </p>
+            </div>
+
+            {/* Global-brand devices, on red */}
+            <div className="bg-brand-red p-7 sm:p-10 lg:p-12">
+              <h3 className="text-2xl font-extrabold sm:text-[1.75rem]">
+                أجهزة ومعدات من علامات عالمية
+              </h3>
+              <p className="mt-4 text-[15px] leading-8 sm:text-base">
+                إلى جانب منتجات <span dir="ltr">ROYALiNK</span>، نوفر أجهزة من
+                علامات عالمية لتلبية متطلبات العمل المكتبي، من إعداد الوثائق إلى
+                رقمنتها وطباعتها.
+              </p>
+              <ul className="mt-6 grid grid-cols-2 gap-2">
+                {DEVICES.map((d) => (
+                  <li key={d.label} className="flex items-center gap-3 bg-white/15 px-3.5 py-3 text-sm font-bold">
+                    <d.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                    {d.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
+
+          {/* Our clients */}
+          <motion.div {...fadeUp} className="mt-14 md:mt-20">
+            <h3 className="text-xl font-extrabold text-brand-black sm:text-2xl">قاعدة عملائنا</h3>
+            <p className="ri-lead mt-2">نتوجه بمنتجاتنا إلى:</p>
+          </motion.div>
+          <div className="mt-6 grid grid-cols-1 gap-px border border-brand-line bg-brand-line sm:grid-cols-2 lg:grid-cols-3">
+            {CLIENTS.map((c, i) => (
+              <RuledCell key={c.label} delay={(i % 3) * 0.06} className="flex items-center gap-4 p-5 sm:p-6">
+                <span className={tile}>
+                  <c.icon className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
+                </span>
+                <span className="text-[15px] font-extrabold leading-7 text-brand-black transition-colors duration-300 group-hover:text-white">
+                  {c.label}
+                </span>
+              </RuledCell>
             ))}
           </div>
         </div>
       </section>
-    </div>
-  );
-}
 
-/* ══════════════════════ values data ══════════════════════ */
-const valuesData = [
-  { icon: <ShieldCheck className="w-6 h-6" />, title: "جودة ثابتة", desc: "تبدأ العناية بجودة منتجاتنا أثناء التصنيع، حيث يسحب المصنع عينات عشوائية لاختبار وضوح المطبوعات ودقة الألوان.", accent: "bg-primary" },
-  { icon: <Target className="w-6 h-6" />, title: "خبرة تقنية وتوافق مدروس", desc: "تستند إلى خبرة تتجاوز 16 عاماً في مجال الطباعة لفهم احتياجات المستخدمين واختيار المستلزمات المناسبة لها.", accent: "bg-blue-500" },
-  { icon: <Leaf className="w-6 h-6" />, title: "مسؤولية بيئية", desc: "نهتم بالجوانب البيئية المرتبطة بمستلزمات الطباعة. عبواتنا تتضمن العلامات المطبوعة ISO 14001 و REACH و RoHS.", accent: "bg-emerald-500" },
-  { icon: <HeadphonesIcon className="w-6 h-6" />, title: "دعم خبير", desc: "نساعد عملاءنا وشركاءنا على تحديد المستلزم المناسب لطابعاتهم، ونقدم توجيهاً عملياً بشأن التوافق والاستخدام.", accent: "bg-violet-500" },
-  { icon: <Truck className="w-6 h-6" />, title: "شبكة توزيع وطنية", desc: "تتوفر منتجات روايال إنك في أغلب ولايات الوطن عبر شبكة من الموزعين والوسطاء ونقاط البيع.", accent: "bg-amber-500" },
-  { icon: <RotateCcw className="w-6 h-6" />, title: "ثقة ومتابعة", desc: "نحرص على وضوح التعامل ومتابعة ملاحظات عملائنا، ونلتزم باستبدال المنتج ذي العيب الصناعي في اليوم نفسه.", accent: "bg-rose-500" },
-];
+      {/* 5. VISION & MISSION */}
+      <section className="bg-brand-mist py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <SectionHead
+            eyebrow="رؤيتنا ومهمتنا"
+            title="ما نسعى لتحقيقه"
+            lead="الأسس التي نبني عليها مستقبل روايال إنك."
+          />
 
-/* ══════════════════════ COMPONENTS ══════════════════════ */
-
-function StatCard({ icon, number, label }: { icon: React.ReactNode; number: string; label: string }) {
-  return (
-    <div className="flex flex-col items-center text-center group cursor-default">
-      <div className="text-primary mb-5 opacity-80 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-300">
-        {icon}
-      </div>
-      <span className="text-2xl md:text-4xl lg:text-5xl font-light text-white mb-2 tracking-tight group-hover:scale-105 transition-transform duration-300">{number}</span>
-      <span className="text-sm text-gray-400 font-medium tracking-wide">{label}</span>
-    </div>
-  );
-}
-
-/* ─── Timeline Milestone (with expandable details) ─── */
-function TimelineMilestone({
-  year, title, description, expandedDetails, icon, image, side, highlight,
-}: {
-  year: string; title: string; description: string; expandedDetails: string[]; icon: React.ReactNode; image?: string; side: "left" | "right"; highlight?: boolean;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const cardOnRight = side === "right";
-
-  const cardContent = (
-    <MilestoneCard
-      year={year} title={title} description={description} expandedDetails={expandedDetails}
-      image={image} highlight={highlight} isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)}
-    />
-  );
-
-  return (
-    <div className="relative flex flex-col md:grid md:grid-cols-[1fr_48px_1fr] items-center md:items-start gap-6 md:gap-0 w-full z-10">
-      {/* Desktop left column */}
-      <div className="hidden md:flex justify-end">
-        {cardOnRight ? (
-          <motion.div initial={{ opacity: 0, x: 60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="w-full max-w-md">
-            {cardContent}
+          <motion.div {...fadeUp} className="ri-crop grid grid-cols-1 text-white lg:grid-cols-2">
+            <Aim
+              tone="red"
+              icon={Lightbulb}
+              title="رؤيتنا"
+              text="أن تكون روايال إنك الخيار الأول لمستلزمات الطباعة المتوافقة في الجزائر؛ علامة يطلبها المستخدم بالاسم ثقةً في جودتها، ويعتمد عليها المهني لاستقرار أدائها، ويختارها الموزع لتنمية نشاطه. كما نطمح إلى أن يقترن اسمها بتجربة طباعة تجمع الجودة والموثوقية، وتمنح مستخدميها مردوداً يلبي احتياجاتهم ويعزّز ثقتهم باختيارها."
+              points={[
+                "علامة يطلبها المستخدم بالاسم",
+                "يعتمد عليها المهني لاستقرار أدائها",
+                "يختارها الموزع لتنمية نشاطه",
+              ]}
+            />
+            <Aim
+              tone="black"
+              icon={Crosshair}
+              title="مهمتنا"
+              text="أن نمنح عملاءنا الثقة في اختيار ما يناسب أعمالهم من الطابعات ومستلزماتها، بتوظيف خبرتنا الميدانية في توفير منتجات تجمع بين جودة الطباعة وكفاءة الاستخدام، مع الحرص على توافق المستلزمات مع الأجهزة والمحافظة على أدائها. ونعمل على ترسيخ ثقة المستخدمين بمنتجات روايال إنك وتنمية الطلب عليها، بما يدعم أعمال موزعينا ونقاط البيع المتعاملة معنا، ويجعل رضا المستخدم أساساً لنمو مشترك وشراكات طويلة الأمد."
+              points={[
+                "توافق المستلزمات مع الأجهزة",
+                "دعم موزعينا ونقاط البيع المتعاملة معنا",
+                "رضا المستخدم أساس لشراكات طويلة الأمد",
+              ]}
+            />
           </motion.div>
-        ) : <div />}
-      </div>
-
-      {/* Center dot */}
-      <div className="flex flex-col items-center pt-0 md:pt-2 z-20">
-        <motion.div initial={{ scale: 0 }} whileInView={{ scale: 1 }} viewport={{ once: true, margin: "-60px" }} transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.15 }} className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg shadow-primary/25 ring-[5px] ring-background relative z-20">
-          {icon}
-        </motion.div>
-      </div>
-
-      {/* Desktop right column */}
-      <div className="hidden md:flex justify-start">
-        {!cardOnRight ? (
-          <motion.div initial={{ opacity: 0, x: -60 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.7 }} className="w-full max-w-md">
-            {cardContent}
-          </motion.div>
-        ) : <div />}
-      </div>
-
-      {/* Mobile card */}
-      <div className="md:hidden w-full px-2 relative z-10">
-        <motion.div initial={{ opacity: 0, y: -40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.6 }}>
-          {cardContent}
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-function MilestoneCard({
-  year, title, description, expandedDetails, image, highlight, isExpanded, onToggle,
-}: {
-  year: string; title: string; description: string; expandedDetails: string[];
-  image?: string; highlight?: boolean; isExpanded: boolean; onToggle: () => void;
-}) {
-  return (
-    <div
-      className={`bg-card rounded-2xl border shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden group cursor-pointer ${
-        highlight ? "border-primary/30 ring-1 ring-primary/10" : "border-border/60"
-      }`}
-      onClick={onToggle}
-    >
-      {image && (
-        <div className="relative h-44 w-full overflow-hidden">
-          <Image src={image} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          <span className="absolute bottom-3 right-4 text-white text-sm font-bold bg-primary/90 backdrop-blur-sm rounded-lg px-3 py-1">{year}</span>
         </div>
-      )}
+      </section>
 
-      <div className="p-6">
-        {!image && (
-          <span className="inline-block text-xs font-bold text-primary bg-primary/10 rounded-lg px-3 py-1.5 mb-3">{year}</span>
-        )}
-        <h4 className="text-lg font-bold mb-2 text-foreground">{title}</h4>
-        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+      {/* 6. VALUES */}
+      <section className="bg-white py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <SectionHead
+            eyebrow="ما يميزنا"
+            title="قيمنا ومزايانا التنافسية"
+            lead="التزامات نعمل بها يومياً لخدمة عملائنا وشركائنا."
+          />
 
-        {/* Expand/collapse toggle */}
-        <button
-          className="mt-4 flex items-center gap-2 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
-          onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        >
-          <span>{isExpanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}</span>
-          <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.3 }}>
-            <ChevronDown className="w-4 h-4" />
-          </motion.div>
-        </button>
-
-        {/* Expandable details */}
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.4, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              <div className="pt-4 mt-4 border-t border-border/50 space-y-2.5">
-                {expandedDetails.map((detail, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.08 }}
-                    className="flex items-start gap-2.5"
+          <div className="grid grid-cols-1 gap-px border border-brand-line bg-brand-line sm:grid-cols-2 lg:grid-cols-3">
+            {VALUES.map((v, i) => (
+              <RuledCell key={v.title} delay={(i % 3) * 0.08} className="flex flex-col p-7 sm:p-9">
+                <div className="flex items-start justify-between">
+                  <span className={tile}>
+                    <v.icon className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
+                  </span>
+                  <span
+                    dir="ltr"
+                    className="text-sm font-extrabold tabular-nums text-brand-black/25 transition-colors duration-300 group-hover:text-white/40"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground leading-relaxed">{detail}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <h3 className="mt-6 text-lg font-extrabold text-brand-black transition-colors duration-300 group-hover:text-white">
+                  {v.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-brand-gray transition-colors duration-300 group-hover:text-white/75">
+                  {v.desc}
+                </p>
+                {v.link && (
+                  <Link
+                    href={v.link.href}
+                    className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-extrabold text-brand-red transition-colors hover:text-brand-red-dark group-hover:hover:text-white"
+                  >
+                    {v.link.label}
+                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                )}
+              </RuledCell>
+            ))}
+          </div>
+        </div>
+      </section>
 
-function ValueCard({ icon, title, desc, index, accent }: { icon: React.ReactNode; title: string; desc: string; index: number; accent: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.08 }}
-      className="relative bg-card rounded-2xl border border-border/50 p-8 overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-400"
-    >
-      <div className={`absolute top-0 right-0 left-0 h-1 ${accent} scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-right`} />
-      <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mb-6 text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">{icon}</div>
-      <h3 className="text-lg font-bold mb-3 text-foreground">{title}</h3>
-      <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
-    </motion.div>
+      {/* 7. CONTACT */}
+      <section className="bg-brand-mist py-14 md:py-20">
+        <div className="container mx-auto px-4">
+          <ContactSplitCard
+            eyebrow="تواصل معنا"
+            title="لنتحدث عن احتياجات شركتك من الطباعة"
+            text="فريقنا جاهز للإجابة عن استفساراتكم وتقديم الدعم المناسب، أينما كنتم في الجزائر."
+            cta={{ href: "/contact", label: "تواصل معنا" }}
+          />
+        </div>
+      </section>
+    </div>
   );
 }
