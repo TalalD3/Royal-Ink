@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { supabase } from "@/lib/supabase/client";
 import type {
   Product,
   ProductCategory,
@@ -13,7 +12,6 @@ import type {
 import { CATEGORIES_CONFIG, CATEGORY_ORDER, SUPPORTED_BRANDS } from "@/types/product";
 import { CATEGORY_DEFAULT_SPECS, CATEGORY_SPECS } from "@/i18n/specs";
 import { ProductNotesEditor, ProductSpecsEditor } from "./product-details-editor";
-import { initialProducts } from "@/data/initial-products";
 import { ImageCropperModal } from "@/components/ui/image-cropper-modal";
 import {
   exportProductsToExcel,
@@ -78,7 +76,7 @@ function specsForCategory(specs: ProductSpecs, category: ProductCategory): Produ
 }
 
 export function AdminProductsManager() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters & Search
@@ -133,18 +131,12 @@ export function AdminProductsManager() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/products", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
       const json = await res.json();
-      if (json.data && json.data.length > 0) {
+      // The real catalogue from the database — even when it is empty
+      if (Array.isArray(json.data)) {
         setProducts(json.data);
       }
     } catch (err) {
@@ -246,19 +238,12 @@ export function AdminProductsManager() {
     setUploadingImage(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error("جلسة العمل منتهية");
 
       const formData = new FormData();
       formData.append("file", blob, "cropped-product.webp");
 
       const res = await fetch("/api/admin/upload-image", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
         body: formData,
       });
 
@@ -300,10 +285,6 @@ export function AdminProductsManager() {
     };
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error("جلسة العمل منتهية");
 
       if (editingProduct) {
         // Update
@@ -311,7 +292,6 @@ export function AdminProductsManager() {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ id: editingProduct.id, ...payload }),
         });
@@ -324,7 +304,6 @@ export function AdminProductsManager() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify(payload),
         });
@@ -347,16 +326,9 @@ export function AdminProductsManager() {
     if (!confirm(`هل أنت متأكد من حذف المنتج "${name}"؟`)) return;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch(`/api/admin/products?id=${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
 
       if (res.ok) {
@@ -372,16 +344,9 @@ export function AdminProductsManager() {
     if (products.length === 0) return;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/products?id=all", {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
 
       if (res.ok) {
@@ -396,10 +361,6 @@ export function AdminProductsManager() {
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       setProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, isActive: !currentStatus } : p))
@@ -409,7 +370,6 @@ export function AdminProductsManager() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ id, isActive: !currentStatus }),
       });
@@ -441,16 +401,11 @@ export function AdminProductsManager() {
 
     setImporting(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/products", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(importPreview.products),
       });

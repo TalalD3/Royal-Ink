@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { setAdminHint } from "@/lib/admin-hint";
 import { Lock, Mail, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function AdminLoginPage() {
@@ -16,8 +16,8 @@ export default function AdminLoginPage() {
   // If already logged in, redirect directly to dashboard
   useEffect(() => {
     async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      const res = await fetch("/api/admin/session").catch(() => null);
+      if (res?.ok) {
         router.replace("/admin");
       } else {
         setCheckingSession(false);
@@ -32,15 +32,19 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
       });
+      const json = await res.json().catch(() => ({}));
 
-      if (error) {
-        setErrorMsg("بيانات الدخول غير صحيحة. يرجى التحقق من البريد وكلمة المرور.");
-      } else if (data.session) {
+      if (!res.ok) {
+        setErrorMsg(json.error || "بيانات الدخول غير صحيحة. يرجى التحقق من البريد وكلمة المرور.");
+      } else {
+        setAdminHint();
         router.replace("/admin");
+        router.refresh();
       }
     } catch {
       setErrorMsg("حدث خطأ أثناء الاتصال بالخادم. حاول مجدداً.");

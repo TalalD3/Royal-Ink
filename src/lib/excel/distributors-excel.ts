@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import type { DbDistributor } from "@/lib/supabase/client";
+import type { DbDistributor } from "@/types/distributor";
 import { algeriaWilayas } from "@/data/algeria-wilayas";
 import { type BadgeTier, badgeConfig } from "@/data/distributors";
 

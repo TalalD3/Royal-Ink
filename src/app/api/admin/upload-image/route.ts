@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
+import { isAdminRequest } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import fs from "fs";
 import path from "path";
@@ -8,29 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const token = authHeader.substring(7);
-
-    let isAuthorized = false;
-    if (
-      process.env.SUPABASE_SERVICE_ROLE_KEY &&
-      token === process.env.SUPABASE_SERVICE_ROLE_KEY
-    ) {
-      isAuthorized = true;
-    } else {
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser(token);
-      if (!authError && user) {
-        isAuthorized = true;
-      }
-    }
-
-    if (!isAuthorized) {
+    if (!(await isAdminRequest(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

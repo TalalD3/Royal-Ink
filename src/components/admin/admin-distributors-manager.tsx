@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { supabase, type DbDistributor } from "@/lib/supabase/client";
+import type { DbDistributor } from "@/types/distributor";
 import { algeriaWilayas } from "@/data/algeria-wilayas";
 import { badgeConfig, type BadgeTier } from "@/data/distributors";
 import {
@@ -72,15 +72,8 @@ export function AdminDistributorsManager() {
   const fetchDistributors = async () => {
     setLoading(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/distributors", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
       const json = await res.json();
       if (json.data) {
@@ -167,17 +160,12 @@ export function AdminDistributorsManager() {
     };
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error("جلسة العمل منتهية، يرجى تسجيل الدخول مجدداً");
 
       if (editingItem) {
         const res = await fetch("/api/admin/distributors", {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({ id: editingItem.id, ...payload }),
         });
@@ -188,7 +176,6 @@ export function AdminDistributorsManager() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify(payload),
         });
@@ -210,16 +197,9 @@ export function AdminDistributorsManager() {
     if (!confirm(`هل أنت متأكد من حذف نقطة البيع "${name}"؟`)) return;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch(`/api/admin/distributors?id=${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
       if (res.ok) {
         setDistributors((prev) => prev.filter((d) => d.id !== id));
@@ -234,16 +214,11 @@ export function AdminDistributorsManager() {
   // Toggle active status
   const handleToggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/distributors", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ id, is_active: !currentStatus }),
       });
@@ -306,17 +281,12 @@ export function AdminDistributorsManager() {
     ];
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       setLoading(true);
       const res = await fetch("/api/admin/distributors", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(initialData),
       });
@@ -353,16 +323,11 @@ export function AdminDistributorsManager() {
 
     setImporting(true);
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/distributors", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(importPreview.distributors),
       });
@@ -388,16 +353,9 @@ export function AdminDistributorsManager() {
     if (distributors.length === 0) return;
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
 
       const res = await fetch("/api/admin/distributors?id=all", {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
 
       if (res.ok) {

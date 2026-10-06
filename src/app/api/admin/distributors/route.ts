@@ -1,132 +1,80 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { isAdminRequest } from "@/lib/admin-auth";
+import {
+  distributorCreateSchema,
+  distributorInputSchema,
+  idSchema,
+  parseOneOrMany,
+  validationMessage,
+} from "@/lib/validation";
+import {
+  createDistributors,
+  deleteAllDistributors,
+  deleteDistributor,
+  listAllDistributors,
+  updateDistributor,
+} from "@/lib/distributors-store";
 
 export const dynamic = "force-dynamic";
 
-async function checkAdminAuth(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-  const token = authHeader.substring(7);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  return user;
-}
+const unauthorized = () => NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+const failed = (err: unknown, status = 500) =>
+  NextResponse.json({ error: (err as Error)?.message || "Server error" }, { status });
 
-// GET: list all distributors
+// GET: every point of sale (active or not)
 export async function GET(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdminRequest(req))) return unauthorized();
+  try {
+    return NextResponse.json({ data: await listAllDistributors() });
+  } catch (err) {
+    return failed(err);
   }
-
-  const { data, error } = await supabaseAdmin
-    .from("distributors")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data });
 }
 
-// POST: create new distributor (or array for seeding)
+// POST: one point of sale, or an array (Excel import / sample data)
 export async function POST(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdminRequest(req))) return unauthorized();
+  try {
+    const parsed = parseOneOrMany(distributorCreateSchema, await req.json());
+    if (!parsed.success) return NextResponse.json({ error: validationMessage(parsed.error) }, { status: 400 });
+    const items = (Array.isArray(parsed.data) ? parsed.data : [parsed.data]) as Parameters<typeof createDistributors>[0];
+    return NextResponse.json({ data: await createDistributors(items) });
+  } catch (err) {
+    return failed(err, 400);
   }
-
-  const body = await req.json();
-  const records = Array.isArray(body) ? body : [body];
-
-  const { data, error } = await supabaseAdmin
-    .from("distributors")
-    .insert(records)
-    .select();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data });
 }
 
-// PUT: update distributor
+// PUT: update one point of sale
 export async function PUT(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await isAdminRequest(req))) return unauthorized();
+  try {
+    const parsed = distributorInputSchema.extend({ id: idSchema }).safeParse(await req.json());
+    if (!parsed.success) return NextResponse.json({ error: validationMessage(parsed.error) }, { status: 400 });
+    const { id, ...updates } = parsed.data;
+    const updated = await updateDistributor(id, updates as Parameters<typeof updateDistributor>[1]);
+    if (!updated) return NextResponse.json({ error: "Point of sale not found" }, { status: 404 });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    return failed(err, 400);
   }
-
-  const body = await req.json();
-  const { id, ...updates } = body;
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Missing distributor ID" },
-      { status: 400 }
-    );
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from("distributors")
-    .update(updates)
-    .eq("id", id)
-    .select();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ data: data?.[0] });
 }
 
-// DELETE: delete distributor
+// DELETE: ?id=<id> or ?id=all
 export async function DELETE(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json(
-      { error: "Missing distributor ID" },
-      { status: 400 }
-    );
-  }
-
-  if (id === "all") {
-    const { error } = await supabaseAdmin
-      .from("distributors")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!(await isAdminRequest(req))) return unauthorized();
+  const parsedId = idSchema.safeParse(new URL(req.url).searchParams.get("id"));
+  if (!parsedId.success) return NextResponse.json({ error: "Missing distributor ID" }, { status: 400 });
+  const id = parsedId.data;
+  try {
+    if (id === "all") {
+      const count = await deleteAllDistributors();
+      return NextResponse.json({ success: true, deleted: count });
     }
-
-    return NextResponse.json({ success: true, message: "All distributors deleted" });
+    if (!(await deleteDistributor(id))) {
+      return NextResponse.json({ error: "Point of sale not found" }, { status: 404 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return failed(err);
   }
-
-  const { error } = await supabaseAdmin
-    .from("distributors")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ success: true });
 }

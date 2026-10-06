@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Tajawal } from "next/font/google";
 import "./globals.css";
 import { SiteHeader, SiteFooter } from "@/components/layout/site-shell";
+import { AdminBubble } from "@/components/admin/admin-bubble";
 
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
@@ -31,6 +32,8 @@ export default function RootLayout({
         <SiteHeader />
         <main className="min-h-screen">{children}</main>
         <SiteFooter />
+        {/* Floating dashboard shortcut — only for a logged-in admin */}
+        <AdminBubble />
       </body>
     </html>
   );

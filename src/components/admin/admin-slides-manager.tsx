@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/client";
 import type { HeroSlide, SlideTextAlign, SlideButton } from "@/types/slide";
 import { DEFAULT_SLIDES } from "@/types/slide";
 import { ImageCropperModal, AspectRatioOption } from "@/components/ui/image-cropper-modal";
@@ -31,24 +30,15 @@ import {
 } from "lucide-react";
 
 /* ─── Helpers ─── */
-async function getAuthToken() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token || "";
-}
-
 async function apiCall(
   method: string,
   body?: any,
   query?: string
 ): Promise<any> {
-  const token = await getAuthToken();
   const url = `/api/admin/slides${query ? `?${query}` : ""}`;
   const res = await fetch(url, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -135,7 +125,7 @@ export function AdminSlidesManager() {
           (a: HeroSlide, b: HeroSlide) => a.sort_order - b.sort_order
         );
         setSlides(sorted);
-        setIsUsingSupabase(!!json.isUsingSupabase);
+        setIsUsingSupabase(!!json.isUsingDatabase);
       }
     } catch (err: any) {
       console.error("Failed to load slides:", err);
@@ -202,16 +192,12 @@ export function AdminSlidesManager() {
     showToast("جاري معالجة ورفع الصورة المحسّنة...");
 
     try {
-      const token = await getAuthToken();
       const formData = new FormData();
       formData.append("file", croppedBlob, `slide-${Date.now()}.webp`);
       formData.append("bucket", "hero-slides");
 
       const res = await fetch("/api/admin/upload-image", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body: formData,
       });
 
@@ -419,8 +405,8 @@ export function AdminSlidesManager() {
           )}
           <span className="text-xs font-semibold text-foreground">
             {isUsingSupabase
-              ? "متصل بقاعدة بيانات Supabase (مزامنة سحابية مباشرة)"
-              : "تخزين دائم نشط (حفظ فوري في ملفات النظام، وسيعمل مع Supabase فور تشغيل السكربت)"}
+              ? "متصل بقاعدة البيانات (MongoDB) — الحفظ فوري"
+              : "قاعدة البيانات غير متاحة — تُعرض الشرائح الافتراضية"}
           </span>
         </div>
         <span
@@ -430,7 +416,7 @@ export function AdminSlidesManager() {
               : "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
           }`}
         >
-          {isUsingSupabase ? "Supabase Live" : "Persistent Local"}
+          {isUsingSupabase ? "MongoDB" : "Offline"}
         </span>
       </div>
 

@@ -391,6 +391,19 @@
   .ri-skeleton { animation: none; }
 }
 
+/* Admin bubble — a square ring that pulses out twice when it appears */
+@keyframes riBubblePulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.ri-bubble-pulse {
+  opacity: 0;
+  animation: riBubblePulse 1.1s ease-out 0.4s 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ri-bubble-pulse { animation: none; }
+}
+
 /* Journey (about page) — one unit = 1% of the pinned frame's height
    (the screen under the 80px header), so the collage keeps its
    composition on any screen */

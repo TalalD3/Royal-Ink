@@ -1,176 +1,148 @@
-import fs from "fs";
-import path from "path";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { DEFAULT_SLIDES } from "@/types/slide";
-import type { HeroSlide } from "@/types/slide";
+import type { HeroSlide, SlideButton, SlideTextAlign } from "@/types/slide";
+import seedFile from "@/data/hero-slides.json";
+import { slidesCol, slideFromDoc, toObjectId, type SlideDoc } from "@/lib/db/collections";
 
-const DATA_FILE = path.join(process.cwd(), "src", "data", "hero-slides.json");
+/* ══════════════════════════════════════════════════════════════════════
+   HERO SLIDES — MongoDB "slides" collection
 
-/* ── Local File Storage ── */
-function readLocalSlides(): HeroSlide[] {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf-8");
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error("Error reading local slides file:", e);
-  }
+   While the collection is empty, visitors see the built-in slides
+   (src/data/hero-slides.json, else DEFAULT_SLIDES). The first time the
+   admin opens the slide manager they are copied into the database so
+   they can be edited. Public reads are cached; admin changes refresh
+   them immediately (tag "slides").
+   ══════════════════════════════════════════════════════════════════════ */
 
-  // Initialize with DEFAULT_SLIDES
-  saveLocalSlides(DEFAULT_SLIDES);
-  return DEFAULT_SLIDES;
+export const SLIDES_TAG = "slides";
+
+const ALIGN: SlideTextAlign[] = ["right", "center", "left"];
+const text = (v: unknown, max = 500) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+
+function builtInSlides(): HeroSlide[] {
+  const fromFile = Array.isArray(seedFile) ? (seedFile as HeroSlide[]) : [];
+  return (fromFile.length ? fromFile : DEFAULT_SLIDES).slice().sort((a, b) => a.sort_order - b.sort_order);
 }
 
-function saveLocalSlides(slides: HeroSlide[]): void {
-  try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(slides, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Error writing local slides file:", e);
-  }
+function cleanButtons(v: unknown): SlideButton[] {
+  if (!Array.isArray(v)) return [];
+  return v.slice(0, 2).map((b) => ({
+    text: text(b?.text, 60),
+    href: /^(\/|https?:\/\/)/.test(text(b?.href, 300)) ? text(b?.href, 300) : "/",
+    variant: b?.variant === "outline" ? "outline" : "primary",
+  })) as SlideButton[];
 }
 
-/* ── DB Row to HeroSlide ── */
-function mapRow(d: any): HeroSlide {
+/** Admin input (HeroSlide shape) → database fields */
+function inputToFields(input: Partial<HeroSlide>): Partial<SlideDoc> {
+  const out: Partial<SlideDoc> = {};
+  if (input.sort_order !== undefined) out.sortOrder = Math.round(Number(input.sort_order)) || 0;
+  if (input.image_url !== undefined) {
+    const url = text(input.image_url, 1000);
+    if (/^(https:\/\/|\/)/.test(url)) out.image = { url, key: text(input.image_key, 200) || undefined };
+  }
+  if (input.overlay_opacity !== undefined) {
+    out.overlayOpacity = Math.min(100, Math.max(0, Math.round(Number(input.overlay_opacity)) || 0));
+  }
+  if (input.title !== undefined) out.title = text(input.title, 200);
+  if (input.subtitle !== undefined) out.subtitle = text(input.subtitle, 600);
+  if (input.text_align !== undefined) out.textAlign = ALIGN.includes(input.text_align) ? input.text_align : "center";
+  if (input.buttons !== undefined) out.buttons = cleanButtons(input.buttons);
+  if (input.is_active !== undefined) out.isActive = !!input.is_active;
+  return out;
+}
+
+function toDoc(s: Partial<HeroSlide>, now = new Date()): SlideDoc {
+  const f = inputToFields(s);
   return {
-    id: d.id,
-    sort_order: d.sort_order ?? 0,
-    image_url: d.image_url ?? "",
-    overlay_opacity: d.overlay_opacity ?? 50,
-    title: d.title ?? "",
-    subtitle: d.subtitle ?? "",
-    text_align: d.text_align ?? "center",
-    buttons: Array.isArray(d.buttons)
-      ? d.buttons
-      : typeof d.buttons === "string"
-      ? JSON.parse(d.buttons || "[]")
-      : [],
-    is_active: d.is_active ?? true,
-    created_at: d.created_at,
+    sortOrder: f.sortOrder ?? 0,
+    image: f.image ?? { url: "/images/ink-cartridges.jpg" },
+    overlayOpacity: f.overlayOpacity ?? 50,
+    title: f.title ?? "",
+    subtitle: f.subtitle ?? "",
+    textAlign: f.textAlign ?? "center",
+    buttons: f.buttons ?? [],
+    isActive: f.isActive ?? true,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
-/* ── Public & Admin Queries ── */
-export async function getSlides(activeOnly = false): Promise<{ slides: HeroSlide[]; isUsingSupabase: boolean }> {
-  try {
-    let query = supabaseAdmin.from("hero_slides").select("*");
-    if (activeOnly) {
-      query = query.eq("is_active", true);
-    }
-    const { data, error } = await query.order("sort_order", { ascending: true });
-
-    if (!error && data && data.length > 0) {
-      return { slides: data.map(mapRow), isUsingSupabase: true };
-    }
-  } catch {
-    // Supabase query failed
-  }
-
-  const local = readLocalSlides();
-  const sorted = [...local].sort((a, b) => a.sort_order - b.sort_order);
-  const result = activeOnly ? sorted.filter((s) => s.is_active) : sorted;
-  return { slides: result, isUsingSupabase: false };
+/** Copies the built-in slides into an empty collection */
+async function seedIfEmpty(): Promise<void> {
+  const col = await slidesCol();
+  if ((await col.estimatedDocumentCount()) > 0) return;
+  await col.insertMany(builtInSlides().map((s) => toDoc(s)));
 }
 
-/* ── Create ── */
+async function loadActiveSlides(): Promise<HeroSlide[]> {
+  try {
+    const col = await slidesCol();
+    const all = await col.find({}).sort({ sortOrder: 1 }).toArray();
+    if (all.length > 0) return all.filter((d) => d.isActive).map(slideFromDoc);
+  } catch (err) {
+    console.error("[slides] database unavailable — showing the built-in slides:", (err as Error).message);
+  }
+  return builtInSlides().filter((s) => s.is_active);
+}
+
+const getActiveSlidesCached = unstable_cache(loadActiveSlides, ["slides:active"], {
+  revalidate: 60,
+  tags: [SLIDES_TAG],
+});
+
+/* ── Public & admin queries ── */
+
+export async function getSlides(
+  activeOnly = false
+): Promise<{ slides: HeroSlide[]; isUsingDatabase: boolean }> {
+  if (activeOnly) return { slides: await getActiveSlidesCached(), isUsingDatabase: true };
+  await seedIfEmpty();
+  const col = await slidesCol();
+  const docs = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  return { slides: docs.map(slideFromDoc), isUsingDatabase: true };
+}
+
 export async function createSlide(slideData: Omit<HeroSlide, "id">): Promise<HeroSlide> {
-  const newId = `slide-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-  let newSlide: HeroSlide = {
-    ...slideData,
-    id: newId,
-    created_at: new Date().toISOString(),
-  };
-
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("hero_slides")
-      .insert({
-        sort_order: newSlide.sort_order,
-        image_url: newSlide.image_url,
-        overlay_opacity: newSlide.overlay_opacity,
-        title: newSlide.title,
-        subtitle: newSlide.subtitle,
-        text_align: newSlide.text_align,
-        buttons: newSlide.buttons,
-        is_active: newSlide.is_active,
-      })
-      .select();
-
-    if (!error && data && data[0]) {
-      newSlide = mapRow(data[0]);
-    }
-  } catch {
-    // Keep local slide
-  }
-
-  const slides = readLocalSlides();
-  slides.push(newSlide);
-  slides.sort((a, b) => a.sort_order - b.sort_order);
-  saveLocalSlides(slides);
-
-  return newSlide;
+  const col = await slidesCol();
+  const doc = toDoc(slideData);
+  const { insertedId } = await col.insertOne(doc);
+  revalidateTag(SLIDES_TAG);
+  return slideFromDoc({ ...doc, _id: insertedId });
 }
 
-/* ── Update ── */
 export async function updateSlide(id: string, updates: Partial<HeroSlide>): Promise<HeroSlide | null> {
-  try {
-    const dbPayload: any = {};
-    if (updates.sort_order !== undefined) dbPayload.sort_order = updates.sort_order;
-    if (updates.image_url !== undefined) dbPayload.image_url = updates.image_url;
-    if (updates.overlay_opacity !== undefined) dbPayload.overlay_opacity = updates.overlay_opacity;
-    if (updates.title !== undefined) dbPayload.title = updates.title;
-    if (updates.subtitle !== undefined) dbPayload.subtitle = updates.subtitle;
-    if (updates.text_align !== undefined) dbPayload.text_align = updates.text_align;
-    if (updates.buttons !== undefined) dbPayload.buttons = updates.buttons;
-    if (updates.is_active !== undefined) dbPayload.is_active = updates.is_active;
-
-    await supabaseAdmin.from("hero_slides").update(dbPayload).eq("id", id);
-  } catch {
-    // Supabase update failed or table missing
-  }
-
-  const slides = readLocalSlides();
-  const index = slides.findIndex((s) => s.id === id);
-  if (index === -1) {
-    return null;
-  }
-
-  slides[index] = { ...slides[index], ...updates };
-  slides.sort((a, b) => a.sort_order - b.sort_order);
-  saveLocalSlides(slides);
-
-  return slides[index];
+  const _id = toObjectId(id);
+  if (!_id) return null;
+  const col = await slidesCol();
+  const updated = await col.findOneAndUpdate(
+    { _id },
+    { $set: { ...inputToFields(updates), updatedAt: new Date() } },
+    { returnDocument: "after" }
+  );
+  revalidateTag(SLIDES_TAG);
+  return updated ? slideFromDoc(updated) : null;
 }
 
-/* ── Delete ── */
-export async function deleteSlide(id: string): Promise<boolean> {
-  try {
-    await supabaseAdmin.from("hero_slides").delete().eq("id", id);
-  } catch {
-    // Supabase delete failed or table missing
-  }
-
-  const slides = readLocalSlides();
-  const filtered = slides.filter((s) => s.id !== id);
-  saveLocalSlides(filtered);
-  return true;
+/** Deletes a slide; returns its image key so the file can be removed too */
+export async function deleteSlide(id: string): Promise<{ deleted: boolean; imageKey?: string }> {
+  const _id = toObjectId(id);
+  if (!_id) return { deleted: false };
+  const col = await slidesCol();
+  const doc = await col.findOneAndDelete({ _id });
+  revalidateTag(SLIDES_TAG);
+  return { deleted: !!doc, imageKey: doc?.image?.key };
 }
 
-/* ── Reset to Defaults ── */
-export async function resetSlidesToDefault(): Promise<HeroSlide[]> {
-  try {
-    await supabaseAdmin.from("hero_slides").delete().neq("id", "none");
-  } catch {
-    // Ignore
-  }
-
-  saveLocalSlides(DEFAULT_SLIDES);
-  return DEFAULT_SLIDES;
+/** Back to the built-in slides; returns the uploaded image keys that were dropped */
+export async function resetSlidesToDefault(): Promise<{ slides: HeroSlide[]; imageKeys: string[] }> {
+  const col = await slidesCol();
+  const imageKeys = (await col.find({}, { projection: { image: 1 } }).toArray())
+    .map((d) => d.image?.key)
+    .filter((k): k is string => !!k);
+  await col.deleteMany({});
+  await seedIfEmpty();
+  revalidateTag(SLIDES_TAG);
+  const docs = await col.find({}).sort({ sortOrder: 1 }).toArray();
+  return { slides: docs.map(slideFromDoc), imageKeys };
 }

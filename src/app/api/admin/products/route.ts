@@ -1,186 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { initialProducts } from "@/data/initial-products";
-import type { Product } from "@/types/product";
+import { isAdminRequest } from "@/lib/admin-auth";
 import {
-  rowToProduct,
-  legacyRow,
-  v2Columns,
-  isMissingColumnError,
-  MIGRATION_WARNING,
-} from "@/lib/product-db";
+  idSchema,
+  parseOneOrMany,
+  productCreateSchema,
+  productInputSchema,
+  validationMessage,
+} from "@/lib/validation";
+import {
+  createProducts,
+  deleteAllProducts,
+  deleteProduct,
+  listAllProducts,
+  updateProduct,
+} from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
-async function checkAdminAuth(req: NextRequest) {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  const token = authHeader.substring(7);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(token);
-  if (error || !user) return null;
-  return user;
-}
+const unauthorized = () => NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+const failed = (err: unknown, status = 500) =>
+  NextResponse.json({ error: (err as Error)?.message || "Server error" }, { status });
 
-// GET: list all products (or fallback to initial products if table is not yet migrated in Supabase)
+// GET: every product (active or not)
 export async function GET(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  if (!(await isAdminRequest(req))) return unauthorized();
   try {
-    const { data, error } = await supabaseAdmin
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (!error) {
-      // Map database snake_case or standard fields
-      const formatted: Product[] = (data || []).map(rowToProduct);
-      return NextResponse.json({ data: formatted });
-    }
-
-    // Table doesn't exist in Supabase yet -> return initial fallback products
-    return NextResponse.json({ data: initialProducts, isFallback: true });
-  } catch (err: any) {
-    return NextResponse.json({ data: initialProducts, isFallback: true });
+    return NextResponse.json({ data: await listAllProducts() });
+  } catch (err) {
+    return failed(err);
   }
 }
 
-// POST: insert product(s)
+// POST: one product, or an array (Excel import)
 export async function POST(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  if (!(await isAdminRequest(req))) return unauthorized();
   try {
-    const body = await req.json();
-    const items = Array.isArray(body) ? body : [body];
-
-    let warning: string | undefined;
-    let { data, error } = await supabaseAdmin
-      .from("products")
-      .insert(items.map((p: Partial<Product>) => ({ ...legacyRow(p), ...v2Columns(p) })))
-      .select();
-
-    // The v2 columns are not there yet: save the basics and say so
-    if (isMissingColumnError(error)) {
-      warning = MIGRATION_WARNING;
-      ({ data, error } = await supabaseAdmin
-        .from("products")
-        .insert(items.map((p: Partial<Product>) => legacyRow(p)))
-        .select());
-    }
-
-    if (error) {
-      // If table doesn't exist, return simulated success with UUIDs
-      const simulated: Product[] = items.map((p: any) => ({
-        ...p,
-        id: p.id || `local-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        isActive: p.isActive ?? true,
-      }));
-      return NextResponse.json({ data: simulated, warning: "Saved locally (Supabase table pending)" });
-    }
-
-    return NextResponse.json({ data, warning });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || "Failed to create" }, { status: 500 });
+    const parsed = parseOneOrMany(productCreateSchema, await req.json());
+    if (!parsed.success) return NextResponse.json({ error: validationMessage(parsed.error) }, { status: 400 });
+    const items = (Array.isArray(parsed.data) ? parsed.data : [parsed.data]) as Parameters<typeof createProducts>[0];
+    return NextResponse.json({ data: await createProducts(items) });
+  } catch (err) {
+    return failed(err, 400);
   }
 }
 
-// PUT: update product
+// PUT: update one product
 export async function PUT(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+  if (!(await isAdminRequest(req))) return unauthorized();
   try {
-    const body = await req.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
-    }
-
-    const dbPayload: any = {};
-    if (updates.name !== undefined) dbPayload.name = updates.name;
-    if (updates.brand !== undefined) dbPayload.brand = updates.brand;
-    if (updates.category !== undefined) dbPayload.category = updates.category;
-    if (updates.sku !== undefined) dbPayload.sku = updates.sku;
-    if (updates.color !== undefined) dbPayload.color = updates.color;
-    if (updates.imageUrl !== undefined) dbPayload.image_url = updates.imageUrl;
-    if (updates.compatiblePrinters !== undefined) dbPayload.compatible_printers = updates.compatiblePrinters;
-    if (updates.notes !== undefined) dbPayload.notes = updates.notes;
-    if (updates.isActive !== undefined) dbPayload.is_active = updates.isActive;
-    if (updates.notesI18n?.ar !== undefined) dbPayload.notes = updates.notesI18n.ar || null;
-
-    const v2: any = {};
-    const v2Values = v2Columns(updates);
-    if (updates.slug !== undefined) v2.slug = v2Values.slug;
-    if (updates.specs !== undefined) v2.specs = v2Values.specs;
-    if (updates.notesI18n !== undefined) v2.notes_i18n = v2Values.notes_i18n;
-
-    let warning: string | undefined;
-    let { data, error } = await supabaseAdmin
-      .from("products")
-      .update({ ...dbPayload, ...v2 })
-      .eq("id", id)
-      .select();
-
-    if (isMissingColumnError(error)) {
-      warning = MIGRATION_WARNING;
-      ({ data, error } = await supabaseAdmin
-        .from("products")
-        .update(dbPayload)
-        .eq("id", id)
-        .select());
-    }
-
-    if (error) {
-      return NextResponse.json({ data: { id, ...updates }, warning: "Saved locally" });
-    }
-
-    return NextResponse.json({ data: data?.[0], warning });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const parsed = productInputSchema.extend({ id: idSchema }).safeParse(await req.json());
+    if (!parsed.success) return NextResponse.json({ error: validationMessage(parsed.error) }, { status: 400 });
+    const { id, ...updates } = parsed.data;
+    const updated = await updateProduct(id, updates as Parameters<typeof updateProduct>[1]);
+    if (!updated) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    return NextResponse.json({ data: updated });
+  } catch (err) {
+    return failed(err, 400);
   }
 }
 
-// DELETE: delete product
+// DELETE: ?id=<id> or ?id=all
 export async function DELETE(req: NextRequest) {
-  const user = await checkAdminAuth(req);
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
-  }
-
-  if (id === "all") {
-    const { error } = await supabaseAdmin
-      .from("products")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000"); // Deletes all rows in table
-    if (error) {
-      return NextResponse.json({ success: true, note: "Cleared locally" });
+  if (!(await isAdminRequest(req))) return unauthorized();
+  const parsedId = idSchema.safeParse(new URL(req.url).searchParams.get("id"));
+  if (!parsedId.success) return NextResponse.json({ error: "Missing product ID" }, { status: 400 });
+  const id = parsedId.data;
+  try {
+    if (id === "all") {
+      const { count } = await deleteAllProducts();
+      return NextResponse.json({ success: true, deleted: count });
     }
-    return NextResponse.json({ success: true, message: "All products deleted" });
+    const { deleted } = await deleteProduct(id);
+    if (!deleted) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    return failed(err);
   }
-
-  const { error } = await supabaseAdmin.from("products").delete().eq("id", id);
-  if (error) {
-    return NextResponse.json({ success: true, note: "Deleted locally" });
-  }
-
-  return NextResponse.json({ success: true });
 }

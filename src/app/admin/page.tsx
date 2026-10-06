@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { clearAdminHint, setAdminHint } from "@/lib/admin-hint";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase/client";
 import { AdminProductsManager } from "@/components/admin/admin-products-manager";
 import { AdminDistributorsManager } from "@/components/admin/admin-distributors-manager";
 import { AdminSlidesManager } from "@/components/admin/admin-slides-manager";
@@ -26,22 +26,24 @@ export default function AdminDashboardPage() {
   // Check authentication
   useEffect(() => {
     async function checkAuth() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
+      const res = await fetch("/api/admin/session").catch(() => null);
+      if (!res?.ok) {
         router.replace("/admin/login");
         return;
       }
-      setUserEmail(session.user.email ?? null);
+      const json = await res.json().catch(() => ({}));
+      setUserEmail(json.email ?? null);
+      setAdminHint(); // lets the floating admin button appear on the site
       setCheckingAuth(false);
     }
     checkAuth();
   }, [router]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await fetch("/api/admin/logout", { method: "POST" }).catch(() => null);
+    clearAdminHint();
     router.replace("/admin/login");
+    router.refresh();
   };
 
   if (checkingAuth) {

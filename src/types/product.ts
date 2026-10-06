@@ -159,6 +159,8 @@ export interface Product {
   sku?: string;
   color?: ProductColor;
   imageUrl?: string;
+  /** UploadThing file key of the image (used to delete it) */
+  imageKey?: string;
   compatiblePrinters: string[];
   /** Legacy single note (Arabic) — read as the Arabic note when notesI18n.ar is empty */
   notes?: string;

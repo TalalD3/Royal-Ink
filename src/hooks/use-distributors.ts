@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { supabase, type DbDistributor } from "@/lib/supabase/client";
+import type { DbDistributor } from "@/types/distributor";
 import {
   distributors as fallbackDistributors,
   type Distributor,
@@ -27,22 +27,16 @@ export function useDistributors(initialCustom?: Distributor[]) {
   );
   const [isLoading, setIsLoading] = useState(true);
 
+  // Active points of sale from the server (empty database → keep the
+  // built-in examples, as before)
   const fetchActiveDistributors = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("distributors")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: true });
-
-      if (!error && data && data.length > 0) {
-        setDistributorList(data.map(mapDbDistributor));
-      } else if (!error && data && data.length === 0) {
-        // If DB table is initialized but has no records yet, keep fallback
-        setDistributorList(fallbackDistributors);
-      }
+      const res = await fetch("/api/distributors");
+      const json = await res.json();
+      const data: DbDistributor[] = Array.isArray(json.data) ? json.data : [];
+      setDistributorList(data.length > 0 ? data.map(mapDbDistributor) : fallbackDistributors);
     } catch (err) {
-      console.warn("Failed to load distributors from Supabase, using fallback:", err);
+      console.warn("Failed to load points of sale, using the built-in list:", err);
     } finally {
       setIsLoading(false);
     }
@@ -57,21 +51,12 @@ export function useDistributors(initialCustom?: Distributor[]) {
 
     fetchActiveDistributors();
 
-    // Subscribe to realtime database changes
-    const channel = supabase
-      .channel("distributors_live_sync")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "distributors" },
-        () => {
-          fetchActiveDistributors();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    // Pick up admin changes when the visitor comes back to the tab
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchActiveDistributors();
     };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [initialCustom, fetchActiveDistributors]);
 
   const activeWilayaCodes = useMemo(

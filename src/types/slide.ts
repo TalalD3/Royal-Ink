@@ -17,6 +17,8 @@ export interface HeroSlide {
   sort_order: number;
   /** Background image URL (absolute or relative to /public) */
   image_url: string;
+  /** UploadThing file key of the image (empty for the built-in images) */
+  image_key?: string;
   /** Dark overlay opacity 0–100 applied over the image */
   overlay_opacity: number;
   /** Headline text */
