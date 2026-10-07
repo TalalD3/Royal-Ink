@@ -1,0 +1,15 @@
+# Netlify build settings (test deployment).
+# Netlify detects Next.js by itself and adds its Next.js runtime; this file
+# only pins the build command and the Node version the site needs
+# (the login and database libraries need Node 22).
+#
+# The secrets are NOT here: add them in Netlify under
+# Site configuration → Environment variables:
+#   MONGODB_URI, UPLOADTHING_TOKEN, SESSION_SECRET, SMTP_USER, SMTP_PASS
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"

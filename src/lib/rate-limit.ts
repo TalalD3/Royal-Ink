@@ -28,6 +28,12 @@ export function reset(key: string) {
     x-forwarded-for is the one the proxy added; earlier entries can be
     typed in by the visitor and are ignored. */
 export function clientIp(headers: Headers): string {
+  // On Netlify the platform writes the visitor's address in its own header
+  // (trusted only there — elsewhere a visitor could send it themselves)
+  if (process.env.DEPLOY_TARGET === "netlify") {
+    const fromNetlify = headers.get("x-nf-client-connection-ip")?.trim();
+    if (fromNetlify) return fromNetlify;
+  }
   const forwarded = headers.get("x-forwarded-for")?.split(",").map((s) => s.trim()).filter(Boolean);
   return forwarded?.[forwarded.length - 1] || headers.get("x-real-ip")?.trim() || "unknown";
 }

@@ -15,6 +15,9 @@ const appId = uploadthingAppId();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
+  // Where this build runs ("netlify" during a Netlify build, else empty) —
+  // used to read the visitor's address from the right header
+  env: { DEPLOY_TARGET: process.env.NETLIFY ? "netlify" : "" },
   images: {
     remotePatterns: [
       {
