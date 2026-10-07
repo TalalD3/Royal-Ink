@@ -21,7 +21,7 @@ export function ProductVisual({
   return (
     <div className={cn("relative flex items-center justify-center overflow-hidden bg-brand-mist", className)}>
       {product.imageUrl ? (
-        // Admin uploads live on Supabase Storage: plain <img>, no domain list needed
+        // Admin uploads (UploadThing): plain <img>, no domain list needed
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={product.imageUrl}

@@ -10,6 +10,7 @@ import type {
 } from "@/types/product";
 import type { DbDistributor } from "@/types/distributor";
 import type { HeroSlide, SlideButton, SlideTextAlign } from "@/types/slide";
+import type { SiteSettings } from "@/types/site-settings";
 
 /* ══════════════════════════════════════════════════════════════════════
    COLLECTIONS — database name: royal_ink
@@ -18,6 +19,9 @@ import type { HeroSlide, SlideButton, SlideTextAlign } from "@/types/slide";
    distributors  points of sale shown on the map
    slides        home page hero slides
    admins        admin logins (passwords stored as bcrypt hashes)
+   settings      one document (_id "site"): contact details, social
+                 accounts, contact page photos, FAQ, store address
+   messages      contact-form messages (a copy of every email sent)
 
    Documents use camelCase. Each has a MongoDB _id; the site receives it
    as the string `id`. `legacyId` keeps an old Supabase id when a record
@@ -88,6 +92,25 @@ export interface AdminDoc {
   lastLoginAt?: Date;
 }
 
+/** The single site settings document */
+export type SettingsDoc = Partial<SiteSettings> & { _id: "site"; updatedAt?: Date };
+
+/** A contact-form message, kept even if the email could not be sent */
+export interface MessageDoc {
+  _id?: ObjectId;
+  name: string;
+  email: string;
+  phone: string;
+  rc: string;
+  subject: string;
+  message: string;
+  product: string;
+  createdAt: Date;
+  /** "sent" once the email left, "failed" otherwise */
+  emailStatus: "sent" | "failed";
+  emailError?: string;
+}
+
 /* ── Collection handles ── */
 
 export async function productsCol(): Promise<Collection<ProductDoc>> {
@@ -101,6 +124,12 @@ export async function slidesCol(): Promise<Collection<SlideDoc>> {
 }
 export async function adminsCol(): Promise<Collection<AdminDoc>> {
   return (await getDb()).collection<AdminDoc>("admins");
+}
+export async function messagesCol(): Promise<Collection<MessageDoc>> {
+  return (await getDb()).collection<MessageDoc>("messages");
+}
+export async function settingsCol(): Promise<Collection<SettingsDoc>> {
+  return (await getDb()).collection<SettingsDoc>("settings");
 }
 
 /** A string id from the site → ObjectId, or null if it isn't one */

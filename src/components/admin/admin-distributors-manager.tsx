@@ -11,6 +11,23 @@ import {
   type NewDistributorPayload,
 } from "@/lib/excel/distributors-excel";
 import {
+  Badge,
+  Btn,
+  EmptyState,
+  Field,
+  FormSection,
+  IconBtn,
+  LoadingBlock,
+  Modal,
+  Notice,
+  Panel,
+  SectionHead,
+  Select,
+  StatStrip,
+  inputCls,
+  textareaCls,
+} from "@/components/admin/admin-ui";
+import {
   MapPin,
   Plus,
   Search,
@@ -30,7 +47,24 @@ import {
   FileDown,
   FileSpreadsheet,
   AlertTriangle,
+  Percent,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** The rank as a square tag: the headquarters in red, partners in black */
+const BADGE_TONE: Record<BadgeTier, "red" | "black" | "mist" | "outline"> = {
+  headquarters: "red",
+  premium: "black",
+  authorized: "mist",
+  standard: "outline",
+};
+
+function RankBadge({ tier }: { tier: string }) {
+  const t = (tier in BADGE_TONE ? tier : "standard") as BadgeTier;
+  return <Badge tone={BADGE_TONE[t]}>{badgeConfig[t].labelAr}</Badge>;
+}
 
 export function AdminDistributorsManager() {
   const [distributors, setDistributors] = useState<DbDistributor[]>([]);
@@ -410,595 +444,579 @@ export function AdminDistributorsManager() {
     return { total, activeCount, wilayasCovered, coveragePercentage };
   }, [distributors]);
 
+  const hasFilters =
+    searchQuery.trim() !== "" || selectedWilayaFilter !== "all" || selectedBadgeFilter !== "all";
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedWilayaFilter("all");
+    setSelectedBadgeFilter("all");
+  };
+  const openImport = () => {
+    setImportPreview(null);
+    setIsImportModalOpen(true);
+  };
+  const wilayaName = (code: number) =>
+    algeriaWilayas.find((w) => w.code === code)?.nameAr || `ولاية ${code}`;
+
   return (
-    <div className="space-y-4">
-      {/* ─── STATS CARDS ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        {/* Total */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
-            <Building2 className="w-4 h-4 text-foreground" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">إجمالي نقاط البيع</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.total}</span>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <SectionHead
+        eyebrow="أين تجدنا"
+        title="نقاط البيع"
+        description="نقاط البيع التي تظهر على خريطة الموزعين، مع أرقامها ومواقعها."
+        actions={
+          <Btn variant="red" icon={<Plus className="h-4 w-4" aria-hidden="true" />} onClick={openCreateModal}>
+            إضافة نقطة بيع
+          </Btn>
+        }
+      />
 
-        {/* Active */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-            <Eye className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">النقاط النشطة</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.activeCount}</span>
-          </div>
-        </div>
+      {/* ─── Figures ─── */}
+      <StatStrip
+        items={[
+          { label: "إجمالي نقاط البيع", value: stats.total, icon: <Building2 className="h-5 w-5" aria-hidden="true" /> },
+          { label: "النقاط الظاهرة", value: stats.activeCount, icon: <Eye className="h-5 w-5" aria-hidden="true" /> },
+          {
+            label: "ولايات مغطاة من 58",
+            value: stats.wilayasCovered,
+            icon: <MapPin className="h-5 w-5" aria-hidden="true" />,
+          },
+          {
+            label: "نسبة التغطية الوطنية",
+            value: `${stats.coveragePercentage}%`,
+            icon: <Percent className="h-5 w-5" aria-hidden="true" />,
+          },
+        ]}
+      />
 
-        {/* Wilayas covered */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center shrink-0">
-            <MapPin className="w-4 h-4 text-amber-600" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">ولايات مغطاة</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">
-              {stats.wilayasCovered}
-              <span className="text-[11px] font-normal text-muted-foreground"> / 58</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Coverage % */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-blue-50 dark:bg-blue-950/20 flex items-center justify-center shrink-0">
-            <span className="text-sm font-bold text-blue-600">%</span>
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">نسبة التغطية الوطنية</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.coveragePercentage}%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── TOOLBAR ─── */}
-      <div className="flex flex-col gap-3">
-        {/* Row 1: Action buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>إضافة نقطة بيع</span>
-            </button>
-
-            <button
-              onClick={downloadDistributorsTemplate}
-              title="تحميل ملف Excel تجريبي"
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>نموذج Excel</span>
-            </button>
-
-            {distributors.length === 0 && !loading && (
-              <button
-                onClick={handleSeedDefaults}
-                className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>بذر بيانات نموذجية</span>
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => exportDistributorsToExcel(distributors)}
-              title="تصدير الكل إلى ملف Excel"
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>تصدير</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setImportPreview(null);
-                setIsImportModalOpen(true);
-              }}
-              title="استيراد نقاط بيع من ملف Excel"
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>استيراد</span>
-            </button>
-
-            {/* Clear all selling points — double confirmation */}
-            {distributors.length > 0 && (
-              <div className="relative">
-                {!showClearConfirm ? (
-                  <button
-                    onClick={() => setShowClearConfirm(true)}
-                    title="إفراغ نقاط البيع"
-                    className="inline-flex items-center gap-1 px-2 py-[7px] rounded-md text-[11px] font-medium text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span className="hidden sm:inline">إفراغ</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md px-2 py-1">
-                    <AlertTriangle className="w-3 h-3 text-red-500" />
-                    <span className="text-[11px] text-red-700 dark:text-red-400 font-medium">
-                      حذف {distributors.length} نقطة؟
-                    </span>
-                    <button
-                      onClick={handleDeleteAllDistributors}
-                      className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 cursor-pointer"
-                    >
-                      تأكيد
-                    </button>
-                    <button
-                      onClick={() => setShowClearConfirm(false)}
-                      className="px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      إلغاء
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Search + Filters */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* ─── Search, filters and Excel ─── */}
+      <Panel>
+        <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_240px_200px]">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gray"
+              aria-hidden="true"
+            />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="بحث بالاسم أو الولاية أو الهاتف..."
-              className="w-full h-9 pr-9 pl-8 rounded-md bg-white dark:bg-card border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+              placeholder="ابحث بالاسم أو الولاية أو الهاتف…"
+              aria-label="بحث في نقاط البيع"
+              className={cn(inputCls, "ps-10 pe-10")}
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="مسح البحث"
+                className="absolute end-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-brand-gray hover:text-brand-black"
               >
-                <X className="w-3 h-3" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
+          <div className="grid grid-cols-2 gap-3 lg:contents">
+            <Select
+              value={selectedWilayaFilter}
+              onChange={(e) => setSelectedWilayaFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
+              aria-label="الولاية"
+            >
+              <option value="all">كل الولايات</option>
+              {sortedWilayas.map((w) => (
+                <option key={w.code} value={w.code}>
+                  {w.code} - {w.nameAr}
+                </option>
+              ))}
+            </Select>
+            <Select value={selectedBadgeFilter} onChange={(e) => setSelectedBadgeFilter(e.target.value)} aria-label="الرتبة">
+              <option value="all">كل الرتب</option>
+              <option value="headquarters">المقر</option>
+              <option value="premium">شريك رئيسي</option>
+              <option value="authorized">موزع معتمد</option>
+              <option value="standard">نقطة بيع</option>
+            </Select>
+          </div>
+        </div>
 
-          <select
-            value={selectedWilayaFilter}
-            onChange={(e) =>
-              setSelectedWilayaFilter(
-                e.target.value === "all" ? "all" : Number(e.target.value)
-              )
-            }
-            className="h-9 pr-2.5 pl-10 rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[160px]"
-          >
-            <option value="all">كل الولايات</option>
-            {sortedWilayas.map((w) => (
-              <option key={w.code} value={w.code}>
-                {w.code} - {w.nameAr}
-              </option>
+        <div className="flex flex-col gap-3 border-t border-brand-line bg-brand-mist px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <div className="grid grid-cols-3 gap-2 sm:flex">
+            <Btn
+              size="sm"
+              variant="outline"
+              title="تحميل ملف Excel فارغ بالأعمدة الصحيحة"
+              icon={<FileDown className="h-4 w-4" aria-hidden="true" />}
+              onClick={downloadDistributorsTemplate}
+            >
+              النموذج
+            </Btn>
+            <Btn
+              size="sm"
+              variant="outline"
+              title="تصدير كل نقاط البيع إلى Excel"
+              icon={<Download className="h-4 w-4" aria-hidden="true" />}
+              onClick={() => exportDistributorsToExcel(distributors)}
+            >
+              تصدير
+            </Btn>
+            <Btn size="sm" variant="outline" icon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={openImport}>
+              استيراد
+            </Btn>
+          </div>
+
+          {/* Clear all — asks once more, inline */}
+          {distributors.length > 0 &&
+            (!showClearConfirm ? (
+              <Btn
+                size="sm"
+                variant="ghost"
+                className="text-brand-red hover:bg-white hover:text-brand-red"
+                icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                onClick={() => setShowClearConfirm(true)}
+              >
+                إفراغ نقاط البيع
+              </Btn>
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border border-brand-red/30 bg-white px-3 py-2">
+                <span className="flex items-center gap-2 text-[13px] font-bold text-brand-black">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-brand-red" aria-hidden="true" />
+                  حذف كل نقاط البيع ({distributors.length})؟
+                </span>
+                <span className="flex gap-2 ms-auto">
+                  <Btn size="sm" variant="red" onClick={handleDeleteAllDistributors}>
+                    تأكيد الحذف
+                  </Btn>
+                  <Btn size="sm" variant="ghost" onClick={() => setShowClearConfirm(false)}>
+                    إلغاء
+                  </Btn>
+                </span>
+              </div>
             ))}
-          </select>
-
-          <select
-            value={selectedBadgeFilter}
-            onChange={(e) => setSelectedBadgeFilter(e.target.value)}
-            className="h-9 pr-2.5 pl-10 rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[130px]"
-          >
-            <option value="all">كل الرتب</option>
-            <option value="headquarters">المقر</option>
-            <option value="premium">شريك رئيسي</option>
-            <option value="authorized">موزع معتمد</option>
-            <option value="standard">نقطة بيع</option>
-          </select>
         </div>
-      </div>
+      </Panel>
 
-      {/* ─── DATA TABLE ─── */}
-      {loading ? (
-        <div className="py-16 flex flex-col items-center justify-center text-muted-foreground gap-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-[12px]">جاري التحميل...</span>
-        </div>
-      ) : filteredDistributors.length === 0 ? (
-        <div className="py-12 text-center bg-white dark:bg-card border border-dashed border-border rounded-lg p-6">
-          <MapPin className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-          <h4 className="text-[13px] font-semibold text-foreground mb-1">
-            لا توجد نقاط بيع مطابقة
-          </h4>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            جرب تعديل البحث أو أضف نقطة بيع جديدة.
+      {/* ─── Count ─── */}
+      {!loading && distributors.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-brand-gray">
+          <p>
+            عرض <span className="font-extrabold text-brand-black">{filteredDistributors.length}</span> من{" "}
+            <span className="font-extrabold text-brand-black">{distributors.length}</span> نقطة بيع
           </p>
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>إضافة نقطة بيع</span>
-          </button>
+          {hasFilters && (
+            <button type="button" onClick={resetFilters} className="text-sm font-bold text-brand-red underline-offset-4 hover:underline">
+              مسح الفلاتر
+            </button>
+          )}
         </div>
+      )}
+
+      {/* ─── Points of sale ─── */}
+      {loading ? (
+        <LoadingBlock label="جارٍ تحميل نقاط البيع…" />
+      ) : filteredDistributors.length === 0 ? (
+        distributors.length === 0 ? (
+          <EmptyState
+            icon={<MapPin className="h-6 w-6" aria-hidden="true" />}
+            title="لا توجد نقاط بيع بعد"
+            text="أضف أول نقطة بيع، أو استورد القائمة من Excel، أو ابدأ ببيانات نموذجية تعدّلها لاحقاً."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Btn variant="red" icon={<Plus className="h-4 w-4" aria-hidden="true" />} onClick={openCreateModal}>
+                  إضافة نقطة بيع
+                </Btn>
+                <Btn variant="outline" icon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={openImport}>
+                  استيراد من Excel
+                </Btn>
+                <Btn variant="ghost" icon={<Sparkles className="h-4 w-4" aria-hidden="true" />} onClick={handleSeedDefaults}>
+                  بيانات نموذجية
+                </Btn>
+              </div>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={<Search className="h-6 w-6" aria-hidden="true" />}
+            title="لا توجد نقاط بيع مطابقة"
+            text="جرّب كلمة بحث أخرى، أو امسح الفلاتر لعرض كل النقاط."
+            action={
+              <Btn variant="outline" onClick={resetFilters}>
+                مسح الفلاتر
+              </Btn>
+            }
+          />
+        )
       ) : (
-        <div className="bg-white dark:bg-card border border-border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+        <>
+          {/* Desktop: a ruled table */}
+          <div className="hidden overflow-x-auto border border-brand-line bg-white lg:block">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-muted/40 dark:bg-muted/20 border-b border-border text-right">
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground">الاسم</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground w-28">الولاية</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden sm:table-cell w-24">الرتبة</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden md:table-cell w-32">الهاتف</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden lg:table-cell w-20">الخريطة</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground w-16 text-center">الحالة</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground w-20 text-center">إجراءات</th>
+                <tr className="bg-brand-black text-white">
+                  <th className="px-4 py-3 text-start text-xs font-extrabold">نقطة البيع</th>
+                  <th className="w-44 px-4 py-3 text-start text-xs font-extrabold">الولاية</th>
+                  <th className="w-36 px-4 py-3 text-start text-xs font-extrabold">الرتبة</th>
+                  <th className="w-44 px-4 py-3 text-start text-xs font-extrabold">الهاتف</th>
+                  <th className="w-28 px-4 py-3 text-start text-xs font-extrabold">الخريطة</th>
+                  <th className="w-28 px-4 py-3 text-center text-xs font-extrabold">الحالة</th>
+                  <th className="w-32 px-4 py-3 text-center text-xs font-extrabold">إجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
-                {filteredDistributors.map((item) => {
-                  const badge = badgeConfig[item.badge as BadgeTier] || badgeConfig.standard;
-                  const wilaya = algeriaWilayas.find((w) => w.code === item.wilaya_code);
-
-                  return (
-                    <tr
-                      key={item.id}
-                      className={`group hover:bg-muted/30 transition-colors ${
-                        !item.is_active ? "opacity-50" : ""
-                      }`}
-                    >
-                      {/* Name + Address */}
-                      <td className="py-2 px-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-foreground">{item.name}</span>
-                          {item.badge === "headquarters" && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                              HQ
-                            </span>
-                          )}
-                        </div>
-                        {item.address && (
-                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 max-w-[250px]">
-                            {item.address}
-                          </p>
-                        )}
-                      </td>
-
-                      {/* Wilaya */}
-                      <td className="py-2 px-3">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] font-mono font-bold text-muted-foreground bg-muted/60 px-1 py-0.5 rounded">
-                            {String(item.wilaya_code).padStart(2, "0")}
-                          </span>
-                          <span className="text-[11px] font-medium text-foreground">
-                            {wilaya?.nameAr || `ولاية ${item.wilaya_code}`}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Badge */}
-                      <td className="py-2 px-3 hidden sm:table-cell">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded ${badge.bgClass} ${badge.colorClass}`}
-                        >
-                          <span>{badge.icon}</span>
-                          <span>{badge.labelAr}</span>
+              <tbody>
+                {filteredDistributors.map((item) => (
+                  <tr
+                    key={item.id}
+                    className={cn(
+                      "border-t border-brand-line align-middle transition-colors hover:bg-brand-mist/60",
+                      !item.is_active && "bg-brand-mist/40 text-brand-gray"
+                    )}
+                  >
+                    <td className="px-4 py-3">
+                      <p className={cn("font-extrabold leading-6", item.is_active ? "text-brand-black" : "text-brand-gray")}>
+                        {item.name}
+                      </p>
+                      {item.address && (
+                        <p className="mt-0.5 line-clamp-1 max-w-[340px] text-xs leading-5 text-brand-gray">{item.address}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-2">
+                        <span className="bg-brand-black px-1.5 py-1 text-[11px] font-extrabold leading-none tabular-nums text-white">
+                          {pad(item.wilaya_code)}
                         </span>
-                      </td>
-
-                      {/* Phone */}
-                      <td className="py-2 px-3 hidden md:table-cell" dir="ltr">
-                        {item.phone ? (
-                          <a
-                            href={`tel:${item.phone.replace(/\s/g, "")}`}
-                            className="inline-flex items-center gap-1 text-[11px] font-mono font-medium hover:text-primary transition-colors"
-                          >
-                            <Phone className="w-3 h-3 text-muted-foreground" />
-                            <span>{item.phone}</span>
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground/50">—</span>
-                        )}
-                      </td>
-
-                      {/* Map link */}
-                      <td className="py-2 px-3 hidden lg:table-cell">
-                        {item.location_url ? (
-                          <a
-                            href={item.location_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            <span>خريطة</span>
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground/50 text-[11px]">—</span>
-                        )}
-                      </td>
-
-                      {/* Status toggle */}
-                      <td className="py-2 px-3 text-center">
-                        <button
-                          onClick={() => handleToggleActive(item.id, item.is_active)}
-                          className="cursor-pointer"
-                          title={item.is_active ? "إخفاء" : "تفعيل"}
+                        <span className="font-bold text-brand-black">{wilayaName(item.wilaya_code)}</span>
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <RankBadge tier={item.badge} />
+                    </td>
+                    <td className="px-4 py-3">
+                      {item.phone ? (
+                        <a
+                          href={`tel:${item.phone.replace(/\s/g, "")}`}
+                          dir="ltr"
+                          className="inline-flex items-center gap-2 font-bold text-brand-black transition-colors hover:text-brand-red"
                         >
-                          {item.is_active ? (
-                            <Eye className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <EyeOff className="w-3.5 h-3.5 text-muted-foreground/50" />
-                          )}
-                        </button>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-2 px-3 text-center">
-                        <div className="flex items-center justify-center gap-0.5">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            title="تعديل"
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id, item.name)}
-                            title="حذف"
-                            className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground hover:text-red-600 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                          <Phone className="h-3.5 w-3.5 text-brand-gray" aria-hidden="true" />
+                          {item.phone}
+                        </a>
+                      ) : (
+                        <span className="text-brand-gray/60">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {item.location_url ? (
+                        <a
+                          href={item.location_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[13px] font-bold text-brand-red hover:underline"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                          فتح
+                        </a>
+                      ) : (
+                        <span className="text-brand-gray/60">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(item.id, item.is_active)}
+                        title={item.is_active ? "إخفاء من الخريطة" : "إظهار على الخريطة"}
+                        className="inline-flex"
+                      >
+                        <Badge tone={item.is_active ? "success" : "outline"}>{item.is_active ? "ظاهرة" : "مخفية"}</Badge>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <IconBtn label="تعديل" onClick={() => openEditModal(item)}>
+                          <Edit2 className="h-4 w-4" />
+                        </IconBtn>
+                        <IconBtn label="حذف" tone="danger" onClick={() => handleDelete(item.id, item.name)}>
+                          <Trash2 className="h-4 w-4" />
+                        </IconBtn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
-          {/* Footer */}
-          <div className="px-3 py-2 bg-muted/20 dark:bg-muted/10 border-t border-border text-[11px] text-muted-foreground">
-            عرض {filteredDistributors.length} من {distributors.length} نقطة بيع
-          </div>
-        </div>
-      )}
-
-      {/* ─── MODAL ADD / EDIT ─── */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          dir="rtl"
-        >
-          <div className="relative w-full max-w-md bg-white dark:bg-card border border-border rounded-lg shadow-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="text-[13px] font-semibold text-foreground">
-                {editingItem ? "تعديل نقطة البيع" : "إضافة نقطة بيع جديدة"}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+          {/* Phones and tablets: one card per point of sale */}
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:hidden">
+            {filteredDistributors.map((item) => (
+              <article
+                key={item.id}
+                className={cn(
+                  "flex flex-col border bg-white",
+                  item.is_active ? "border-brand-line" : "border-dashed border-brand-gray/40"
+                )}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-3">
-              {modalError && (
-                <div className="p-2.5 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-[12px] font-medium rounded-md text-center">
-                  {modalError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">
-                  الاسم <span className="text-primary">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="مثال: مكتبة النور — موزع معتمد"
-                  className="w-full h-9 px-3 rounded-md bg-white dark:bg-background border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[12px] font-semibold text-foreground mb-1">الولاية</label>
-                  <select
-                    value={formWilaya}
-                    onChange={(e) => setFormWilaya(Number(e.target.value))}
-                    className="w-full h-9 px-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+                <div className="flex flex-1 items-start gap-3 p-4">
+                  <span
+                    className={cn(
+                      "flex h-12 w-12 shrink-0 flex-col items-center justify-center",
+                      item.is_active ? "bg-brand-black text-white" : "bg-brand-mist text-brand-gray"
+                    )}
                   >
-                    {sortedWilayas.map((w) => (
-                      <option key={w.code} value={w.code}>
-                        {w.code} - {w.nameAr}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-foreground mb-1">الرتبة</label>
-                  <select
-                    value={formBadge}
-                    onChange={(e) => setFormBadge(e.target.value as BadgeTier)}
-                    className="w-full h-9 px-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                  >
-                    <option value="authorized">موزع معتمد</option>
-                    <option value="premium">شريك رئيسي</option>
-                    <option value="standard">نقطة بيع</option>
-                    <option value="headquarters">المقر الرئيسي</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">رابط الخريطة <span className="text-muted-foreground font-normal">(اختياري)</span></label>
-                <input
-                  type="url"
-                  value={formLocationUrl}
-                  onChange={(e) => setFormLocationUrl(e.target.value)}
-                  placeholder="https://maps.google.com/..."
-                  dir="ltr"
-                  className="w-full h-9 px-3 rounded-md bg-white dark:bg-background border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-left"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">الهاتف <span className="text-primary">*</span></label>
-                <input
-                  type="text"
-                  value={formPhone}
-                  onChange={(e) => setFormPhone(e.target.value)}
-                  placeholder="+213 550 00 00 00"
-                  dir="ltr"
-                  className="w-full h-9 px-3 rounded-md bg-white dark:bg-background border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-left"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">العنوان</label>
-                <textarea
-                  rows={2}
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  placeholder="شارع الاستقلال، بجانب البريد..."
-                  className="w-full p-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-2 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>جاري الحفظ...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5" />
-                      <span>{editingItem ? "حفظ" : "إضافة"}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── EXCEL IMPORT MODAL ─── */}
-      {isImportModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          dir="rtl"
-        >
-          <div className="relative w-full max-w-md bg-white dark:bg-card border border-border rounded-lg shadow-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                <div>
-                  <h3 className="text-[13px] font-semibold text-foreground">استيراد نقاط البيع من Excel</h3>
-                  <p className="text-[11px] text-muted-foreground">يدعم ملفات .xlsx و .xls</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsImportModalOpen(false)}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <input
-              type="file"
-              ref={importFileInputRef}
-              onChange={handleSelectExcelFile}
-              accept=".xlsx, .xls"
-              className="hidden"
-            />
-
-            <div
-              onClick={() => importFileInputRef.current?.click()}
-              className="border-2 border-dashed border-border hover:border-primary/40 rounded-md p-6 text-center cursor-pointer transition-colors bg-muted/10 hover:bg-primary/5"
-            >
-              <Upload className="w-6 h-6 text-muted-foreground/50 mx-auto mb-1.5" />
-              <p className="text-[12px] font-medium text-foreground mb-0.5">
-                اضغط لاختيار ملف Excel لنقاط البيع
-              </p>
-              <span className="text-[10px] text-muted-foreground">
-                استخدم زر "نموذج Excel" لتحميل جدول تجريبي منظم ومطابق
-              </span>
-            </div>
-
-            {importing && (
-              <div className="py-3 flex items-center justify-center gap-2 text-[12px] text-primary">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>جاري قراءة ومعالجة البيانات...</span>
-              </div>
-            )}
-
-            {importPreview && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-2.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 text-[12px] font-medium">
-                  <span>تم استخراج {importPreview.total} نقطة بيع بنجاح</span>
-                  <span className="text-[11px]">جاهزة للحفظ</span>
+                    <span className="text-[9px] font-bold leading-none opacity-60">ولاية</span>
+                    <span className="mt-1 text-base font-extrabold leading-none tabular-nums">{pad(item.wilaya_code)}</span>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <RankBadge tier={item.badge} />
+                      {!item.is_active && <Badge tone="outline">مخفية</Badge>}
+                    </div>
+                    <h3 className="mt-2 text-base font-extrabold leading-7 text-brand-black">{item.name}</h3>
+                    <p className="mt-0.5 text-sm leading-6 text-brand-gray">
+                      {wilayaName(item.wilaya_code)}
+                      {item.address ? ` — ${item.address}` : ""}
+                    </p>
+                  </div>
                 </div>
 
-                {importPreview.errors.length > 0 && (
-                  <div className="p-2 bg-red-50 dark:bg-red-950/20 text-red-600 rounded-md text-[11px] space-y-0.5 max-h-24 overflow-y-auto">
-                    {importPreview.errors.slice(0, 4).map((err, i) => (
-                      <p key={i}>⚠ {err}</p>
-                    ))}
+                {(item.phone || item.location_url) && (
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-brand-line px-4 py-3">
+                    {item.phone ? (
+                      <a
+                        href={`tel:${item.phone.replace(/\s/g, "")}`}
+                        dir="ltr"
+                        className="inline-flex items-center gap-2 text-sm font-bold text-brand-black"
+                      >
+                        <Phone className="h-4 w-4 text-brand-red" aria-hidden="true" />
+                        {item.phone}
+                      </a>
+                    ) : (
+                      <span />
+                    )}
+                    {item.location_url && (
+                      <a
+                        href={item.location_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-red"
+                      >
+                        <MapPin className="h-4 w-4" aria-hidden="true" />
+                        الخريطة
+                      </a>
+                    )}
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2">
+                <div className="grid grid-cols-3 border-t border-brand-line">
                   <button
                     type="button"
-                    onClick={() => setImportPreview(null)}
-                    className="px-3 py-1.5 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                    onClick={() => handleToggleActive(item.id, item.is_active)}
+                    className="flex h-11 items-center justify-center gap-2 text-[13px] font-bold text-brand-black transition-colors hover:bg-brand-mist"
                   >
-                    إلغاء
+                    {item.is_active ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    {item.is_active ? "إخفاء" : "إظهار"}
                   </button>
                   <button
                     type="button"
-                    disabled={importing || importPreview.total === 0}
-                    onClick={handleConfirmImport}
-                    className="px-4 py-1.5 rounded-md bg-emerald-600 text-white text-[12px] font-semibold hover:bg-emerald-700 transition-colors cursor-pointer"
+                    onClick={() => openEditModal(item)}
+                    className="flex h-11 items-center justify-center gap-2 bg-brand-black text-[13px] font-bold text-white transition-colors hover:bg-brand-red"
                   >
-                    تأكيد واستيراد ({importPreview.total})
+                    <Edit2 className="h-4 w-4" aria-hidden="true" />
+                    تعديل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item.id, item.name)}
+                    className="flex h-11 items-center justify-center gap-2 text-[13px] font-bold text-brand-red transition-colors hover:bg-brand-red hover:text-white"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    حذف
                   </button>
                 </div>
-              </div>
-            )}
+              </article>
+            ))}
           </div>
-        </div>
+        </>
       )}
+
+      {/* ─── CREATE / EDIT ─── */}
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        eyebrow={editingItem ? "تعديل نقطة بيع" : "نقطة بيع جديدة"}
+        title={editingItem ? "تعديل نقطة البيع" : "إضافة نقطة بيع جديدة"}
+        description="الحقول المعلّمة بـ * مطلوبة."
+        footer={
+          <>
+            <Btn variant="outline" onClick={() => setIsModalOpen(false)}>
+              إلغاء
+            </Btn>
+            <Btn
+              type="submit"
+              form="admin-distributor-form"
+              variant="red"
+              loading={submitting}
+              icon={<Check className="h-4 w-4" aria-hidden="true" />}
+            >
+              {submitting ? "جارٍ الحفظ…" : editingItem ? "حفظ التعديلات" : "إضافة نقطة البيع"}
+            </Btn>
+          </>
+        }
+      >
+        <form id="admin-distributor-form" onSubmit={handleSave} className="space-y-6">
+          {modalError && <Notice tone="danger">{modalError}</Notice>}
+
+          <FormSection title="التعريف">
+            <Field label="الاسم" required htmlFor="dist-name">
+              <input
+                id="dist-name"
+                type="text"
+                required
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="مثال: مكتبة النور — موزع معتمد"
+                className={inputCls}
+              />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="الولاية" htmlFor="dist-wilaya">
+                <Select id="dist-wilaya" value={formWilaya} onChange={(e) => setFormWilaya(Number(e.target.value))}>
+                  {sortedWilayas.map((w) => (
+                    <option key={w.code} value={w.code}>
+                      {w.code} - {w.nameAr}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="الرتبة" htmlFor="dist-badge">
+                <Select id="dist-badge" value={formBadge} onChange={(e) => setFormBadge(e.target.value as BadgeTier)}>
+                  <option value="authorized">موزع معتمد</option>
+                  <option value="premium">شريك رئيسي</option>
+                  <option value="standard">نقطة بيع</option>
+                  <option value="headquarters">المقر الرئيسي</option>
+                </Select>
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="التواصل والموقع">
+            <Field label="الهاتف" required htmlFor="dist-phone" hint="بصيغة 0XXXXXXXXX أو ‎+213XXXXXXXXX.">
+              <input
+                id="dist-phone"
+                type="text"
+                value={formPhone}
+                onChange={(e) => setFormPhone(e.target.value)}
+                placeholder="+213 550 00 00 00"
+                dir="ltr"
+                className={cn(inputCls, "text-left")}
+              />
+            </Field>
+            <Field label="رابط الخريطة" hint="اختياري — رابط الموقع من خرائط Google." htmlFor="dist-map">
+              <input
+                id="dist-map"
+                type="url"
+                value={formLocationUrl}
+                onChange={(e) => setFormLocationUrl(e.target.value)}
+                placeholder="https://maps.google.com/..."
+                dir="ltr"
+                className={cn(inputCls, "text-left")}
+              />
+            </Field>
+            <Field label="العنوان" htmlFor="dist-address">
+              <textarea
+                id="dist-address"
+                rows={2}
+                value={formAddress}
+                onChange={(e) => setFormAddress(e.target.value)}
+                placeholder="شارع الاستقلال، بجانب البريد…"
+                className={textareaCls}
+              />
+            </Field>
+          </FormSection>
+        </form>
+      </Modal>
+
+      {/* ─── EXCEL IMPORT ─── */}
+      <Modal
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        size="sm"
+        eyebrow="Excel"
+        title="استيراد نقاط البيع"
+        description="ملف ‎.xlsx أو ‎.xls بنفس أعمدة النموذج."
+        footer={
+          importPreview ? (
+            <>
+              <Btn variant="outline" onClick={() => setImportPreview(null)}>
+                إلغاء
+              </Btn>
+              <Btn
+                variant="red"
+                loading={importing}
+                disabled={importPreview.total === 0}
+                icon={<Upload className="h-4 w-4" aria-hidden="true" />}
+                onClick={handleConfirmImport}
+              >
+                تأكيد واستيراد ({importPreview.total})
+              </Btn>
+            </>
+          ) : (
+            <Btn
+              variant="outline"
+              icon={<FileDown className="h-4 w-4" aria-hidden="true" />}
+              onClick={downloadDistributorsTemplate}
+            >
+              تحميل النموذج
+            </Btn>
+          )
+        }
+      >
+        <div className="space-y-4">
+          <input
+            type="file"
+            ref={importFileInputRef}
+            onChange={handleSelectExcelFile}
+            accept=".xlsx, .xls"
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => importFileInputRef.current?.click()}
+            className="flex w-full flex-col items-center gap-3 border border-dashed border-brand-black/30 bg-brand-mist px-6 py-8 text-center transition-colors hover:border-brand-red"
+          >
+            <span className="flex h-12 w-12 items-center justify-center bg-brand-black text-white">
+              <FileSpreadsheet className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="text-sm font-extrabold text-brand-black">اختر ملف Excel لنقاط البيع</span>
+            <span className="text-xs leading-5 text-brand-gray">استخدم النموذج لتتأكد من ترتيب الأعمدة.</span>
+          </button>
+
+          {importing && !importPreview && (
+            <p className="flex items-center justify-center gap-2 text-sm font-bold text-brand-gray">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              جارٍ قراءة الملف…
+            </p>
+          )}
+
+          {importPreview && (
+            <>
+              <Notice tone="success">
+                تم استخراج {importPreview.total} نقطة بيع، وهي جاهزة للحفظ.
+              </Notice>
+              {importPreview.errors.length > 0 && (
+                <Notice tone="danger">
+                  <ul className="max-h-32 space-y-1 overflow-y-auto">
+                    {importPreview.errors.slice(0, 4).map((err, i) => (
+                      <li key={i}>{err}</li>
+                    ))}
+                  </ul>
+                  {importPreview.errors.length > 4 && (
+                    <p className="mt-1 text-xs">و{importPreview.errors.length - 4} ملاحظات أخرى.</p>
+                  )}
+                </Notice>
+              )}
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

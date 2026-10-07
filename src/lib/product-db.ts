@@ -9,6 +9,7 @@ import type {
 import { CATEGORY_ORDER, LOCALES, SUPPORTED_BRANDS } from "@/types/product";
 import { CATEGORY_SPECS } from "@/i18n/specs";
 import type { ProductDoc } from "@/lib/db/collections";
+import { uploadKeyFromUrl } from "@/lib/uploadthing-server";
 
 /* ══════════════════════════════════════════════════════════════════════
    PRODUCT INPUT → DATABASE FIELDS
@@ -68,8 +69,9 @@ export function productInputToFields(
   if (input.color !== undefined) out.color = COLORS.includes(input.color as ProductColor) ? input.color : "black";
   if (input.imageUrl !== undefined) {
     const url = text(input.imageUrl, 1000);
-    // Only real addresses (never a temporary blob: preview)
-    out.image = url && /^(https:\/\/|\/)/.test(url) ? { url, key: text(input.imageKey, 200) || undefined } : null;
+    // Only real addresses (never a temporary blob: preview). The UploadThing
+    // key is read from the address itself, so it always matches the file.
+    out.image = url && /^(https:\/\/|\/)/.test(url) ? { url, key: uploadKeyFromUrl(url) } : null;
   }
   if (input.compatiblePrinters !== undefined) {
     out.compatiblePrinters = Array.isArray(input.compatiblePrinters)

@@ -4,14 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
+import { useSiteSettings } from "@/components/site-settings-provider";
+import { telHref } from "@/types/site-settings";
 
 /* ══════════════════════════════════════════════════════════════════════
    CONTACT SPLIT CARD — closing block for the inner pages
    A red block (message + button) beside a black block (direct contacts).
    ══════════════════════════════════════════════════════════════════════ */
-
-const PHONES = ["+213 666 50 99 41", "+213 550 89 94 84"];
-const EMAIL = "royalinkdz@gmail.com";
 
 export function ContactSplitCard({
   eyebrow,
@@ -24,6 +23,8 @@ export function ContactSplitCard({
   text: React.ReactNode;
   cta: { href: string; label: string };
 }) {
+  const { phones, email } = useSiteSettings();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -51,10 +52,10 @@ export function ContactSplitCard({
       <div className="flex flex-col justify-center bg-brand-black p-6 sm:p-8 lg:p-10">
         <p className="text-[13px] font-bold text-white/60">أو اتصل بنا مباشرة</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {PHONES.map((phone) => (
+          {phones.map((phone) => (
             <a
               key={phone}
-              href={`tel:${phone.replace(/\s/g, "")}`}
+              href={telHref(phone)}
               className="inline-flex h-10 items-center gap-2 bg-white/10 px-4 text-sm font-bold transition-colors hover:bg-brand-red focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               <Phone className="h-4 w-4" aria-hidden="true" />
@@ -65,11 +66,11 @@ export function ContactSplitCard({
           ))}
         </div>
         <a
-          href={`mailto:${EMAIL}`}
+          href={`mailto:${email}`}
           className="mt-4 inline-flex items-center gap-2.5 text-[13px] text-white/70 transition-colors hover:text-white"
         >
           <Mail className="h-4 w-4" aria-hidden="true" />
-          <span>{EMAIL}</span>
+          <span>{email}</span>
         </a>
       </div>
     </motion.div>

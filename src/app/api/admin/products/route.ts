@@ -12,8 +12,10 @@ import {
   deleteAllProducts,
   deleteProduct,
   listAllProducts,
+  setPrinterSupplies,
   updateProduct,
 } from "@/lib/products";
+import { deleteUploadedFiles } from "@/lib/uploadthing-server";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +39,13 @@ export async function POST(req: NextRequest) {
   try {
     const parsed = parseOneOrMany(productCreateSchema, await req.json());
     if (!parsed.success) return NextResponse.json({ error: validationMessage(parsed.error) }, { status: 400 });
+    // (supplyIds is not a product field — only the printer link below uses it)
     const items = (Array.isArray(parsed.data) ? parsed.data : [parsed.data]) as Parameters<typeof createProducts>[0];
-    return NextResponse.json({ data: await createProducts(items) });
+    const created = await createProducts(items);
+    // A new printer: link the consumables chosen in its form
+    const supplyIds = !Array.isArray(parsed.data) ? parsed.data.supplyIds : undefined;
+    if (supplyIds && created[0]?.category === "printer") await setPrinterSupplies(created[0], supplyIds);
+    return NextResponse.json({ data: created });
   } catch (err) {
     return failed(err, 400);
   }
@@ -50,10 +57,13 @@ export async function PUT(req: NextRequest) {
   try {
     const parsed = productInputSchema.extend({ id: idSchema }).safeParse(await req.json());
     if (!parsed.success) return NextResponse.json({ error: validationMessage(parsed.error) }, { status: 400 });
-    const { id, ...updates } = parsed.data;
+    const { id, supplyIds, ...updates } = parsed.data;
     const updated = await updateProduct(id, updates as Parameters<typeof updateProduct>[1]);
     if (!updated) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    return NextResponse.json({ data: updated });
+    // A printer: link exactly the consumables chosen in its form
+    if (supplyIds && updated.product.category === "printer") await setPrinterSupplies(updated.product, supplyIds);
+    await deleteUploadedFiles([updated.replacedImageKey]); // the replaced photo
+    return NextResponse.json({ data: updated.product });
   } catch (err) {
     return failed(err, 400);
   }
@@ -67,11 +77,13 @@ export async function DELETE(req: NextRequest) {
   const id = parsedId.data;
   try {
     if (id === "all") {
-      const { count } = await deleteAllProducts();
+      const { count, imageKeys } = await deleteAllProducts();
+      await deleteUploadedFiles(imageKeys);
       return NextResponse.json({ success: true, deleted: count });
     }
-    const { deleted } = await deleteProduct(id);
+    const { deleted, imageKey } = await deleteProduct(id);
     if (!deleted) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    await deleteUploadedFiles([imageKey]);
     return NextResponse.json({ success: true });
   } catch (err) {
     return failed(err);

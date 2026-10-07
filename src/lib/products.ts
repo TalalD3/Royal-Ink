@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { revalidateTag, unstable_cache } from "next/cache";
-import type { Collection } from "mongodb";
+import type { AnyBulkWriteOperation, Collection } from "mongodb";
 import type { Product } from "@/types/product";
 import { initialProducts } from "@/data/initial-products";
 import { productsCol, productFromDoc, toObjectId, type ProductDoc } from "@/lib/db/collections";
@@ -8,6 +8,7 @@ import { productInputToFields } from "@/lib/product-db";
 import {
   buildPrinterIndex,
   normalize,
+  printerNamesOf,
   slugify,
   stripArabicPrefix,
   withSlugs,
@@ -123,7 +124,12 @@ export async function createProducts(inputs: Partial<Product>[]): Promise<Produc
   return created;
 }
 
-export async function updateProduct(id: string, input: Partial<Product>): Promise<Product | null> {
+/** Updates a product; when its image was replaced or removed, also returns
+    the old image's key so that file can be deleted */
+export async function updateProduct(
+  id: string,
+  input: Partial<Product>
+): Promise<{ product: Product; replacedImageKey?: string } | null> {
   const _id = toObjectId(id);
   if (!_id) return null;
   const col = await productsCol();
@@ -137,7 +143,50 @@ export async function updateProduct(id: string, input: Partial<Product>): Promis
   }
   const updated = await col.findOneAndUpdate({ _id }, { $set: fields }, { returnDocument: "after" });
   refresh();
-  return updated ? productFromDoc(updated) : null;
+  if (!updated) return null;
+  const oldKey = current.image?.key || undefined;
+  return {
+    product: productFromDoc(updated),
+    replacedImageKey: oldKey && oldKey !== updated.image?.key ? oldKey : undefined,
+  };
+}
+
+/** Links a printer to exactly the chosen consumables. The link is stored on
+    the consumables (their printer list) — the one place the printer page,
+    the product pages and the search all read — so the printer's model is
+    added to each chosen product, and its names removed from products that
+    are no longer chosen. Returns how many products changed. */
+export async function setPrinterSupplies(printer: Product, supplyIds: string[]): Promise<number> {
+  const names = printerNamesOf(printer);
+  if (names.length === 0) return 0;
+  const keys = new Set(names.map(normalize));
+  const chosen = new Set(supplyIds);
+  const col = await productsCol();
+  const docs = await col
+    .find({ category: { $ne: "printer" } }, { projection: { compatiblePrinters: 1 } })
+    .toArray();
+  const now = new Date();
+  const ops: AnyBulkWriteOperation<ProductDoc>[] = [];
+  for (const d of docs) {
+    const list = d.compatiblePrinters ?? [];
+    const fits = list.some((m) => keys.has(normalize(m)));
+    const wanted = chosen.has(d._id.toHexString());
+    if (wanted && !fits) {
+      ops.push({ updateOne: { filter: { _id: d._id }, update: { $set: { compatiblePrinters: [...list, names[0]], updatedAt: now } } } });
+    } else if (!wanted && fits) {
+      ops.push({
+        updateOne: {
+          filter: { _id: d._id },
+          update: { $set: { compatiblePrinters: list.filter((m) => !keys.has(normalize(m))), updatedAt: now } },
+        },
+      });
+    }
+  }
+  if (ops.length) {
+    await col.bulkWrite(ops);
+    refresh();
+  }
+  return ops.length;
 }
 
 /** Deletes a product; returns its image key so the file can be removed too */

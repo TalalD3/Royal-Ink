@@ -1,29 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearAdminHint, setAdminHint } from "@/lib/admin-hint";
-import Link from "next/link";
 import { AdminProductsManager } from "@/components/admin/admin-products-manager";
 import { AdminDistributorsManager } from "@/components/admin/admin-distributors-manager";
 import { AdminSlidesManager } from "@/components/admin/admin-slides-manager";
-import {
-  Printer,
-  MapPin,
-  LogOut,
-  ExternalLink,
-  Loader2,
-  ShieldCheck,
-  SlidersHorizontal,
-} from "lucide-react";
+import { LoadingBlock } from "@/components/admin/admin-ui";
+import { ExternalLink, Image as ImageIcon, LogOut, MapPin, Package, Settings } from "lucide-react";
+import { AdminSettingsManager } from "@/components/admin/admin-settings-manager";
+import { cn } from "@/lib/utils";
+
+/* ══════════════════════════════════════════════════════════════════════
+   ADMIN DASHBOARD — black top bar (logo, site link, logout), three square
+   tabs, and the selected manager underneath.
+   ══════════════════════════════════════════════════════════════════════ */
+
+type Tab = "products" | "distributors" | "slides" | "settings";
+
+const TABS: { id: Tab; label: string; short: string; icon: typeof Package }[] = [
+  { id: "products", label: "كتالوج المنتجات", short: "المنتجات", icon: Package },
+  { id: "distributors", label: "نقاط البيع", short: "نقاط البيع", icon: MapPin },
+  { id: "slides", label: "شرائح الواجهة", short: "الشرائح", icon: ImageIcon },
+  { id: "settings", label: "معلومات التواصل والإعدادات", short: "الإعدادات", icon: Settings },
+];
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"products" | "distributors" | "slides">("products");
+  const [activeTab, setActiveTab] = useState<Tab>("products");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Check authentication
+  // Check the login
   useEffect(() => {
     async function checkAuth() {
       const res = await fetch("/api/admin/session").catch(() => null);
@@ -39,6 +48,24 @@ export default function AdminDashboardPage() {
     checkAuth();
   }, [router]);
 
+  // Remember the last tab
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("ri-admin-tab") as Tab | null;
+      if (saved && TABS.some((t) => t.id === saved)) setActiveTab(saved);
+    } catch {
+      // ignore
+    }
+  }, []);
+  const selectTab = (t: Tab) => {
+    setActiveTab(t);
+    try {
+      sessionStorage.setItem("ri-admin-tab", t);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleLogout = async () => {
     await fetch("/api/admin/logout", { method: "POST" }).catch(() => null);
     clearAdminHint();
@@ -48,124 +75,98 @@ export default function AdminDashboardPage() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
-        <span className="text-xs text-muted-foreground">
-          جاري التحقق من هوية المسؤول...
-        </span>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <LoadingBlock label="جارٍ التحقق من هوية المسؤول…" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(0,0%,97.5%)] dark:bg-background pb-12 select-none" dir="rtl">
-      {/* ─── ADMIN HEADER ─── */}
-      <header className="sticky top-0 z-40 bg-white dark:bg-card border-b border-border">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          {/* Left: Logo + Admin Badge */}
-          <div className="flex items-center gap-3">
-            <Link href="/admin" className="flex items-center gap-2">
-              <img
-                src="/images/logo.svg"
-                alt="Royal Ink"
-                className="h-7 object-contain"
-              />
-            </Link>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="hidden sm:flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-              <span className="text-[11px] font-semibold text-muted-foreground tracking-wide">
-                لوحة الإدارة
-              </span>
+    <div dir="rtl" className="min-h-screen bg-brand-mist pb-16">
+      {/* ─── Top bar ─── */}
+      <header className="sticky top-0 z-40">
+        <div className="bg-brand-black text-white">
+          <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-4">
+              <Link href="/admin" aria-label="لوحة الإدارة" className="shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/logo-footer-new.svg" alt="Royal Ink" className="h-8 w-auto" />
+              </Link>
+              <span className="hidden h-6 w-px bg-white/20 sm:block" aria-hidden="true" />
+              <span className="hidden text-sm font-extrabold sm:block">لوحة الإدارة</span>
+            </div>
+
+            <div className="flex items-center gap-1 sm:gap-2">
+              {userEmail && (
+                <span dir="ltr" className="hidden max-w-[220px] truncate text-xs font-semibold text-white/60 md:block">
+                  {userEmail}
+                </span>
+              )}
+              <Link
+                href="/"
+                target="_blank"
+                className="inline-flex h-10 items-center gap-2 px-3 text-sm font-bold text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden sm:inline">عرض الموقع</span>
+                <span className="sr-only sm:hidden">عرض الموقع</span>
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-10 items-center gap-2 bg-brand-red px-3 text-sm font-bold text-white transition-colors hover:bg-white hover:text-brand-black sm:px-4"
+              >
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <span>خروج</span>
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Right: User + Links + Logout */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {userEmail && (
-              <span className="hidden md:inline-block text-[11px] font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-md border border-border">
-                {userEmail}
-              </span>
-            )}
-
-            <Link
-              href="/compatibility"
-              target="_blank"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-muted"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span className="hidden sm:inline">صفحة التوافق</span>
-            </Link>
-
-            <Link
-              href="/"
-              target="_blank"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-muted"
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span className="hidden sm:inline">الموقع</span>
-            </Link>
-
-            <div className="h-4 w-px bg-border mx-1" />
-
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-red-600 transition-colors px-2 py-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
-            >
-              <LogOut className="w-3 h-3" />
-              <span>خروج</span>
-            </button>
+        {/* ─── Tabs ─── */}
+        <nav aria-label="أقسام لوحة الإدارة" className="border-b border-brand-line bg-white">
+          <div className="mx-auto grid max-w-[1400px] grid-cols-4 sm:flex sm:px-6">
+            {TABS.map((t) => {
+              const on = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => selectTab(t.id)}
+                  aria-current={on ? "page" : undefined}
+                  className={cn(
+                    "relative flex flex-col items-center justify-center gap-1 px-2 py-3 text-xs font-extrabold transition-colors sm:flex-row sm:gap-2 sm:px-5 sm:py-4 sm:text-sm",
+                    on ? "text-brand-black" : "text-brand-gray hover:text-brand-black"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center transition-colors sm:h-7 sm:w-7",
+                      on ? "bg-brand-red text-white" : "bg-brand-mist text-brand-black"
+                    )}
+                  >
+                    <t.icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <span className="sm:hidden">{t.short}</span>
+                  <span className="hidden sm:inline">{t.label}</span>
+                  {on && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-brand-red" aria-hidden="true" />}
+                </button>
+              );
+            })}
           </div>
-        </div>
-
-        {/* ─── TAB BAR ─── */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center gap-0 -mb-px">
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 border-b-2 text-[12px] font-semibold transition-colors cursor-pointer ${
-              activeTab === "products"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            }`}
-          >
-            <Printer className="w-3.5 h-3.5" />
-            <span>كتالوج المنتجات</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("distributors")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 border-b-2 text-[12px] font-semibold transition-colors cursor-pointer ${
-              activeTab === "distributors"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span>نقاط البيع</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("slides")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 border-b-2 text-[12px] font-semibold transition-colors cursor-pointer ${
-              activeTab === "slides"
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>شرائح الواجهة</span>
-          </button>
-        </div>
+        </nav>
       </header>
 
-      {/* ─── MAIN CONTENT ─── */}
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 pt-5">
+      {/* ─── The selected section ─── */}
+      <main className="mx-auto max-w-[1400px] px-4 pt-6 sm:px-6 sm:pt-8">
         {activeTab === "products" ? (
           <AdminProductsManager />
         ) : activeTab === "distributors" ? (
           <AdminDistributorsManager />
-        ) : (
+        ) : activeTab === "slides" ? (
           <AdminSlidesManager />
+        ) : (
+          <AdminSettingsManager />
         )}
       </main>
     </div>

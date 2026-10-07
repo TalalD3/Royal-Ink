@@ -1,19 +1,11 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import type { Area, Point } from "react-easy-crop";
-import {
-  ZoomIn,
-  ZoomOut,
-  Check,
-  X,
-  RotateCw,
-  Crop as CropIcon,
-  Sparkles,
-  Info,
-  Maximize2,
-} from "lucide-react";
+import { ZoomIn, ZoomOut, Check, X, RotateCw, Crop as CropIcon, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface AspectRatioOption {
   label: string;
@@ -32,6 +24,8 @@ interface ImageCropperModalProps {
   recommendedSizeText?: string;
   aspectRatioOptions?: AspectRatioOption[];
 }
+
+const MAX_OUTPUT_SIDE = 2400;
 
 /** Utility to generate cropped Blob from Canvas */
 async function getCroppedImg(
@@ -55,8 +49,11 @@ async function getCroppedImg(
   const rotRad = (rotation * Math.PI) / 180;
   const isRotated = rotation % 180 !== 0;
 
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  // Large photos are scaled down (longest side 2400 px) — sharp on every
+  // screen and well under the 4 MB upload limit
+  const scale = Math.min(1, MAX_OUTPUT_SIDE / Math.max(pixelCrop.width, pixelCrop.height));
+  canvas.width = Math.round(pixelCrop.width * scale);
+  canvas.height = Math.round(pixelCrop.height * scale);
 
   // Use high quality image smoothing
   ctx.imageSmoothingEnabled = true;
@@ -70,8 +67,8 @@ async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    canvas.width,
+    canvas.height
   );
 
   return new Promise((resolve, reject) => {
@@ -89,6 +86,11 @@ async function getCroppedImg(
     );
   });
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   IMAGE CROPPER — a square panel in the admin theme (full screen on
+   phones), drawn above the form modal that opened it.
+   ══════════════════════════════════════════════════════════════════════ */
 
 export function ImageCropperModal({
   isOpen,
@@ -135,146 +137,166 @@ export function ImageCropperModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 animate-in fade-in duration-200"
       dir="rtl"
+      className="fixed inset-0 z-[75] flex items-stretch justify-center bg-brand-black/80 sm:items-center sm:p-6"
     >
-      <div className="relative w-full max-w-2xl bg-card border border-border/80 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="ri-strip flex w-full flex-col bg-white pt-[3px] sm:max-h-[95vh] sm:max-w-2xl"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border/60 bg-muted/30">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <CropIcon className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-foreground">{title}</h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
+        <div className="flex items-start justify-between gap-4 border-b border-brand-line px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center bg-brand-black text-white">
+              <CropIcon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-base font-extrabold leading-6 text-brand-black">{title}</h3>
+              <p className="mt-0.5 text-xs leading-5 text-brand-gray">{subtitle}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+            aria-label="إغلاق"
+            className="flex h-10 w-10 shrink-0 items-center justify-center bg-brand-black text-white transition-colors hover:bg-brand-red"
           >
-            <X className="w-4 h-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Photoshop Recommendation Box */}
-        {recommendedSizeText && (
-          <div className="bg-primary/5 dark:bg-primary/10 border-b border-primary/15 px-5 sm:px-6 py-2.5 flex items-start gap-2.5">
-            <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-            <div className="text-xs text-foreground/90 space-y-0.5">
-              <p className="font-bold text-primary">
-                المقاس الموصى به لتصميم Photoshop:
-              </p>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* Recommended size */}
+          {recommendedSizeText && (
+            <div className="flex items-start gap-3 border-b border-brand-line bg-brand-mist px-5 py-3 sm:px-6">
+              <span className="mt-1.5 h-2 w-2 shrink-0 bg-brand-red" aria-hidden="true" />
+              <p className="text-xs leading-6 text-brand-black">
+                <span className="font-extrabold">المقاس الموصى به: </span>
                 {recommendedSizeText}
               </p>
             </div>
+          )}
+
+          {/* Cropper viewport */}
+          <div className="relative h-72 w-full select-none overflow-hidden bg-brand-black sm:h-96">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              rotation={rotation}
+              aspect={currentAspect}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={handleCropComplete}
+              cropShape="rect"
+              showGrid={true}
+            />
           </div>
-        )}
 
-        {/* Cropper Viewport */}
-        <div className="relative w-full h-72 sm:h-96 bg-neutral-950 overflow-hidden select-none">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            rotation={rotation}
-            aspect={currentAspect}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={handleCropComplete}
-            cropShape="rect"
-            showGrid={true}
-          />
-        </div>
+          <div className="space-y-5 px-5 py-5 sm:px-6">
+            {/* Aspect ratio */}
+            {aspectRatioOptions && aspectRatioOptions.length > 1 && (
+              <div>
+                <p className="mb-2 text-[13px] font-extrabold text-brand-black">نسبة الأبعاد</p>
+                <div className="grid grid-cols-1 border border-brand-line sm:grid-cols-2" role="radiogroup" aria-label="نسبة الأبعاد">
+                  {aspectRatioOptions.map((opt, i) => {
+                    const on = Math.abs(currentAspect - opt.ratio) < 0.01;
+                    return (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => setCurrentAspect(opt.ratio)}
+                        className={cn(
+                          "px-4 py-3 text-start transition-colors",
+                          i > 0 && "border-t border-brand-line sm:border-s sm:border-t-0",
+                          on ? "bg-brand-black text-white" : "bg-white text-brand-black hover:bg-brand-mist"
+                        )}
+                      >
+                        <span dir="ltr" className="block text-sm font-extrabold">
+                          {opt.label}
+                        </span>
+                        {opt.description && (
+                          <span className={cn("mt-0.5 block text-xs leading-5", on ? "text-white/65" : "text-brand-gray")}>
+                            {opt.description}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-        {/* Aspect Ratio Selector if options provided */}
-        {aspectRatioOptions && aspectRatioOptions.length > 1 && (
-          <div className="px-5 sm:px-6 pt-3 pb-1 flex items-center gap-2 border-t border-border/40 bg-muted/10">
-            <span className="text-[11px] font-bold text-muted-foreground shrink-0">
-              نسبة الأبعاد:
-            </span>
-            <div className="flex gap-1.5 flex-wrap">
-              {aspectRatioOptions.map((opt) => (
+            {/* Zoom & rotation */}
+            <div>
+              <p className="mb-2 text-[13px] font-extrabold text-brand-black">التكبير والتدوير</p>
+              <div className="flex items-center gap-3">
+                <ZoomOut className="h-4 w-4 shrink-0 text-brand-gray" aria-hidden="true" />
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.05}
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  aria-label="التكبير"
+                  className="h-1.5 w-full cursor-pointer accent-[rgb(var(--brand-red))]"
+                />
+                <ZoomIn className="h-4 w-4 shrink-0 text-brand-gray" aria-hidden="true" />
+                <span dir="ltr" className="w-12 shrink-0 text-center text-xs font-extrabold tabular-nums text-brand-black">
+                  {Math.round(zoom * 100)}%
+                </span>
                 <button
-                  key={opt.label}
                   type="button"
-                  onClick={() => setCurrentAspect(opt.ratio)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    Math.abs(currentAspect - opt.ratio) < 0.01
-                      ? "bg-primary text-white shadow-sm"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
+                  onClick={handleRotate}
+                  aria-label="تدوير الصورة 90 درجة"
+                  title="تدوير الصورة 90 درجة"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center border border-brand-line text-brand-black transition-colors hover:border-brand-black"
                 >
-                  {opt.label}
+                  <RotateCw className="h-4 w-4" />
                 </button>
-              ))}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-brand-gray">
+                اسحب الصورة لضبط موضعها داخل الإطار، واستخدم شريط التكبير للاقتراب أو الابتعاد.
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Controls */}
-        <div className="p-4 sm:p-5 space-y-3.5 bg-card">
-          {/* Zoom & Rotation bar */}
-          <div className="flex items-center gap-3">
-            <ZoomOut className="w-4 h-4 text-muted-foreground shrink-0" />
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.05}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-full accent-primary h-1.5 bg-muted rounded-lg cursor-pointer"
-            />
-            <ZoomIn className="w-4 h-4 text-muted-foreground shrink-0" />
-            <span className="text-xs font-mono font-bold text-muted-foreground w-12 text-left">
-              {Math.round(zoom * 100)}%
-            </span>
-
-            {/* Rotate Button */}
-            <button
-              type="button"
-              onClick={handleRotate}
-              title="تدوير الصورة 90 درجة"
-              className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-            >
-              <RotateCw className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="text-[11px] text-muted-foreground text-center">
-            اسحب الصورة بالفأرة لضبط موضعها داخل الإطار، واستخدم شريط التكبير للاقتراب أو الابتعاد.
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-muted/60 rounded-xl transition-colors cursor-pointer"
-            >
-              إلغاء
-            </button>
-            <button
-              type="button"
-              disabled={processing}
-              onClick={handleConfirmCrop}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20 disabled:opacity-50 cursor-pointer"
-            >
-              <Check className="w-4 h-4" />
-              <span>{processing ? "جاري القص والمعالجة..." : "اعتماد وقص الصورة"}</span>
-            </button>
-          </div>
+        {/* Actions */}
+        <div className="flex flex-row-reverse gap-2 border-t border-brand-line bg-brand-mist px-4 py-3 [&>*]:flex-1 sm:flex-row sm:items-center sm:justify-end sm:px-6 sm:py-4 sm:[&>*]:flex-none">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-11 items-center justify-center border border-brand-line bg-white px-5 text-sm font-bold text-brand-black transition-colors hover:border-brand-black"
+          >
+            إلغاء
+          </button>
+          <button
+            type="button"
+            disabled={processing}
+            onClick={handleConfirmCrop}
+            className="inline-flex h-11 items-center justify-center gap-2 bg-brand-red px-5 text-sm font-bold text-white transition-colors hover:bg-brand-black disabled:opacity-50"
+          >
+            {processing ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Check className="h-4 w-4" aria-hidden="true" />
+            )}
+            <span>{processing ? "جارٍ القص…" : "اعتماد القص"}</span>
+          </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

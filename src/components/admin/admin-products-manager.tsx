@@ -9,16 +9,38 @@ import type {
   ProductSpecs,
   LocalizedText,
 } from "@/types/product";
-import { CATEGORIES_CONFIG, CATEGORY_ORDER, SUPPORTED_BRANDS } from "@/types/product";
+import { CATEGORY_ORDER, SUPPORTED_BRANDS } from "@/types/product";
 import { CATEGORY_DEFAULT_SPECS, CATEGORY_SPECS } from "@/i18n/specs";
 import { ProductNotesEditor, ProductSpecsEditor } from "./product-details-editor";
 import { ImageCropperModal } from "@/components/ui/image-cropper-modal";
+import { uploadAdminImage } from "@/lib/uploadthing-client";
+import { CategoryIcon } from "@/components/ui/category-icons";
+import { ColorSwatches } from "@/components/compat/color-swatches";
 import {
   exportProductsToExcel,
   downloadProductsTemplate,
   parseProductsExcel,
 } from "@/lib/excel/products-excel";
 import { CompatiblePrintersInput } from "./compatible-printers-input";
+import { CompatibleSuppliesInput } from "./compatible-supplies-input";
+import { fitsPrinter, printerNamesOf } from "@/lib/product-utils";
+import {
+  Badge,
+  Btn,
+  EmptyState,
+  Field,
+  FormSection,
+  IconBtn,
+  LoadingBlock,
+  Modal,
+  Notice,
+  Panel,
+  SectionHead,
+  Select,
+  StatStrip,
+  Toggle,
+  inputCls,
+} from "@/components/admin/admin-ui";
 import {
   Plus,
   Search,
@@ -29,29 +51,16 @@ import {
   Trash2,
   Image as ImageIcon,
   X,
-  Printer,
   Loader2,
   Check,
   FileDown,
-  ChevronDown,
   Eye,
   EyeOff,
-  MoreHorizontal,
   AlertTriangle,
   Layers,
+  ExternalLink,
 } from "lucide-react";
-
-/* ─── CATEGORY ICON IMAGES ─── */
-const CATEGORY_ICONS: Record<ProductCategory, string> = {
-  printer: "", // uses Lucide <Printer />
-  toner: "/images/icon-toner.png",
-  cartridge: "/images/icon-ink.png",
-  ink: "/images/icon-ink.png",
-  drum_unit: "/images/icon-drum.jpg",
-  fuser: "", // emoji fallback
-  ribbon: "", // emoji fallback
-  spare_parts: "", // uses Lucide
-};
+import { cn } from "@/lib/utils";
 
 /* ─── CATEGORY SHORT LABELS ─── */
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -65,6 +74,15 @@ const CATEGORY_LABELS: Record<ProductCategory, string> = {
   spare_parts: "قطع غيار",
 };
 
+const COLOR_OPTIONS: { value: ProductColor; label: string }[] = [
+  { value: "black", label: "أسود" },
+  { value: "cyan", label: "سماوي" },
+  { value: "magenta", label: "أرجواني" },
+  { value: "yellow", label: "أصفر" },
+  { value: "multi", label: "طقم ألوان" },
+  { value: "none", label: "غير مخصص" },
+];
+
 /** Only the specs that belong to the category, empty ones dropped */
 function specsForCategory(specs: ProductSpecs, category: ProductCategory): ProductSpecs {
   const out: ProductSpecs = {};
@@ -73,6 +91,22 @@ function specsForCategory(specs: ProductSpecs, category: ProductCategory): Produ
     if (v) out[k] = v;
   });
   return out;
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** The product photo on a mist tile, or its category icon */
+function ProductThumb({ product, className }: { product: Product; className?: string }) {
+  return (
+    <div className={cn("relative flex items-center justify-center overflow-hidden bg-brand-mist", className)}>
+      {product.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={product.imageUrl} alt="" className="h-full w-full object-contain p-[8%]" />
+      ) : (
+        <CategoryIcon category={product.category} className="h-1/2 w-1/2 text-brand-black/25" />
+      )}
+    </div>
+  );
 }
 
 export function AdminProductsManager() {
@@ -104,6 +138,8 @@ export function AdminProductsManager() {
   const [formSlug, setFormSlug] = useState("");
   const [formSpecs, setFormSpecs] = useState<ProductSpecs>({});
   const [formNotesI18n, setFormNotesI18n] = useState<LocalizedText>({});
+  // Printers only: the consumables that fit it
+  const [formSupplyIds, setFormSupplyIds] = useState<string[]>([]);
 
   // Warning returned by the API after a save (e.g. SQL v2 not run yet)
   const [saveWarning, setSaveWarning] = useState("");
@@ -166,6 +202,7 @@ export function AdminProductsManager() {
     setFormSlug("");
     setFormSpecs({ ...(CATEGORY_DEFAULT_SPECS.toner ?? {}) });
     setFormNotesI18n({});
+    setFormSupplyIds([]);
     setModalError("");
     setIsModalOpen(true);
   };
@@ -192,6 +229,11 @@ export function AdminProductsManager() {
     setFormSlug(p.slug || "");
     setFormSpecs({ ...(p.specs ?? {}) });
     setFormNotesI18n({ ...(p.notesI18n ?? {}), ar: p.notesI18n?.ar ?? p.notes ?? "" });
+    setFormSupplyIds(
+      p.category === "printer"
+        ? products.filter((c) => c.category !== "printer" && fitsPrinter(c, printerNamesOf(p))).map((c) => c.id)
+        : []
+    );
     setModalError("");
     setIsModalOpen(true);
   };
@@ -233,27 +275,20 @@ export function AdminProductsManager() {
 
   // Handle cropped image complete
   const handleCropComplete = async (blob: Blob, previewUrl: string) => {
-    // Show preview immediately
+    // Show the preview at once, upload to UploadThing, then use the real address
+    const previous = formImageUrl;
     setFormImageUrl(previewUrl);
     setUploadingImage(true);
+    setModalError("");
 
     try {
-
-      const formData = new FormData();
-      formData.append("file", blob, "cropped-product.webp");
-
-      const res = await fetch("/api/admin/upload-image", {
-        method: "POST",
-        body: formData,
-      });
-
-      const json = await res.json();
-      if (json.url) {
-        setFormImageUrl(json.url);
-      }
+      const { url } = await uploadAdminImage(blob, `product-${Date.now()}.webp`);
+      setFormImageUrl(url);
     } catch (err) {
-      console.warn("Could not upload to Supabase storage, keeping local preview URL:", err);
+      setFormImageUrl(previous);
+      setModalError((err as Error).message);
     } finally {
+      URL.revokeObjectURL(previewUrl);
       setUploadingImage(false);
     }
   };
@@ -282,6 +317,7 @@ export function AdminProductsManager() {
       slug: formSlug.trim() || undefined,
       specs: specsForCategory(formSpecs, formCategory),
       notesI18n: formNotesI18n,
+      ...(formCategory === "printer" ? { supplyIds: formSupplyIds } : {}),
     };
 
     try {
@@ -466,407 +502,327 @@ export function AdminProductsManager() {
     return { total, printerCount, tonerCount, inkCount, drumPartsCount };
   }, [products]);
 
-  /* ─── Render a category icon (inline image or Lucide fallback) ─── */
-  const renderCategoryIcon = (cat: ProductCategory, size: number = 16) => {
-    const src = CATEGORY_ICONS[cat];
-    if (src) {
-      return (
-        <img
-          src={src}
-          alt={CATEGORY_LABELS[cat]}
-          className="object-contain"
-          style={{ width: size, height: size }}
-        />
-      );
-    }
-    if (cat === "printer") return <Printer style={{ width: size, height: size }} />;
-    // fuser / ribbon / spare parts fallback
-    return <span style={{ fontSize: size * 0.75 }}>{CATEGORIES_CONFIG[cat]?.icon ?? "🔧"}</span>;
+  const hasFilters = searchQuery.trim() !== "" || selectedBrand !== "all" || selectedCategory !== "all";
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedBrand("all");
+    setSelectedCategory("all");
+  };
+  const openImport = () => {
+    setImportPreview(null);
+    setIsImportModalOpen(true);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {saveWarning && (
-        <div className="flex items-start justify-between gap-3 p-3 rounded-md border border-amber-300 bg-amber-50 text-amber-900 text-[12px] font-medium dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-900">
-          <span className="flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-            {saveWarning}
-          </span>
-          <button
-            type="button"
-            onClick={() => setSaveWarning("")}
-            className="shrink-0 text-amber-700 hover:text-amber-900 cursor-pointer"
-            aria-label="إغلاق"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        <Notice tone="warning" onClose={() => setSaveWarning("")}>
+          {saveWarning}
+        </Notice>
       )}
 
-      {/* ─── STATS CARDS ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-        {/* Total */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0">
-            <Layers className="w-4 h-4 text-foreground" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">إجمالي المنتجات</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.total}</span>
-          </div>
-        </div>
+      <SectionHead
+        eyebrow="دليل التوافق"
+        title="كتالوج المنتجات"
+        description="المنتجات التي تظهر في دليل التوافق، مع مواصفاتها والطابعات المتوافقة معها."
+        actions={
+          <Btn variant="red" icon={<Plus className="h-4 w-4" aria-hidden="true" />} onClick={openCreateModal}>
+            إضافة منتج
+          </Btn>
+        }
+      />
 
-        {/* Printers */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-            <Printer className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">طابعات</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.printerCount}</span>
-          </div>
-        </div>
+      {/* ─── Figures ─── */}
+      <StatStrip
+        items={[
+          { label: "إجمالي المنتجات", value: stats.total, icon: <Layers className="h-5 w-5" aria-hidden="true" /> },
+          { label: "طابعات", value: stats.printerCount, icon: <CategoryIcon category="printer" className="h-5 w-5" /> },
+          { label: "حبر ليزر (تونر)", value: stats.tonerCount, icon: <CategoryIcon category="toner" className="h-5 w-5" /> },
+          { label: "خراطيش وأحبار", value: stats.inkCount, icon: <CategoryIcon category="ink" className="h-5 w-5" /> },
+          { label: "درام وقطع غيار", value: stats.drumPartsCount, icon: <CategoryIcon category="drum_unit" className="h-5 w-5" /> },
+        ]}
+      />
 
-        {/* Toner */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-red-50 dark:bg-red-950/20 flex items-center justify-center shrink-0">
-            {renderCategoryIcon("toner", 18)}
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">خراطيش تونر</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.tonerCount}</span>
-          </div>
-        </div>
-
-        {/* Ink */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-blue-50 dark:bg-blue-950/20 flex items-center justify-center shrink-0">
-            {renderCategoryIcon("ink", 18)}
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">أحبار سائلة</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.inkCount}</span>
-          </div>
-        </div>
-
-        {/* Drum & Parts */}
-        <div className="bg-white dark:bg-card border border-border rounded-lg p-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-md bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center shrink-0">
-            {renderCategoryIcon("drum_unit", 18)}
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground font-medium leading-none mb-1">درام وقطع غيار</p>
-            <span className="text-lg font-bold text-foreground tabular-nums leading-none">{stats.drumPartsCount}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── TOOLBAR: ACTIONS + SEARCH + FILTERS ─── */}
-      <div className="flex flex-col gap-3">
-        {/* Row 1: Action buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>إضافة منتج</span>
-            </button>
-
-            <button
-              onClick={downloadProductsTemplate}
-              title="تحميل ملف Excel تجريبي"
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <FileDown className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>نموذج Excel</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => exportProductsToExcel(products)}
-              title="تصدير الكل"
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>تصدير</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setImportPreview(null);
-                setIsImportModalOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-[7px] rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
-            >
-              <Upload className="w-3.5 h-3.5 text-muted-foreground" />
-              <span>استيراد</span>
-            </button>
-
-            {/* Clear catalog — visually de-emphasized, needs double-click */}
-            {products.length > 0 && (
-              <div className="relative">
-                {!showClearConfirm ? (
-                  <button
-                    onClick={() => setShowClearConfirm(true)}
-                    title="إفراغ الكتالوج"
-                    className="inline-flex items-center gap-1 px-2 py-[7px] rounded-md text-[11px] font-medium text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    <span className="hidden sm:inline">إفراغ</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md px-2 py-1">
-                    <AlertTriangle className="w-3 h-3 text-red-500" />
-                    <span className="text-[11px] text-red-700 dark:text-red-400 font-medium">
-                      حذف {products.length} منتج؟
-                    </span>
-                    <button
-                      onClick={handleDeleteAllProducts}
-                      className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white hover:bg-red-700 cursor-pointer"
-                    >
-                      تأكيد
-                    </button>
-                    <button
-                      onClick={() => setShowClearConfirm(false)}
-                      className="px-1.5 py-0.5 rounded text-[10px] font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      إلغاء
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Row 2: Search + Filters */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* ─── Search, filters and Excel ─── */}
+      <Panel>
+        <div className="grid gap-3 p-3 sm:p-4 lg:grid-cols-[minmax(0,1fr)_200px_220px]">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gray"
+              aria-hidden="true"
+            />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="بحث بالاسم أو الموديل أو الكود..."
-              className="w-full h-9 pr-9 pl-8 rounded-md bg-white dark:bg-card border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+              placeholder="ابحث بالاسم أو الكود أو الطابعة…"
+              aria-label="بحث في المنتجات"
+              className={cn(inputCls, "ps-10 pe-10")}
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="مسح البحث"
+                className="absolute end-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-brand-gray hover:text-brand-black"
               >
-                <X className="w-3 h-3" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
-
-          <select
-            value={selectedBrand}
-            onChange={(e) => setSelectedBrand(e.target.value)}
-            className="h-9 pr-2.5 pl-10 rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[130px]"
-          >
-            <option value="all">كل الماركات</option>
-            {SUPPORTED_BRANDS.map((brand) => (
-              <option key={brand} value={brand}>
-                {brand}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="h-9 pr-2.5 pl-10 rounded-md bg-white dark:bg-card border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer min-w-[130px]"
-          >
-            <option value="all">كل التصنيفات</option>
-            {CATEGORY_ORDER.map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_LABELS[c]}
-              </option>
-            ))}
-          </select>
+          <div className="grid grid-cols-2 gap-3 lg:contents">
+            <Select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} aria-label="الماركة">
+              <option value="all">كل الماركات</option>
+              {SUPPORTED_BRANDS.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand}
+                </option>
+              ))}
+            </Select>
+            <Select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} aria-label="التصنيف">
+              <option value="all">كل التصنيفات</option>
+              {CATEGORY_ORDER.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_LABELS[c]}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
-      </div>
 
-      {/* ─── PRODUCTS DATA TABLE ─── */}
-      {loading ? (
-        <div className="py-16 flex flex-col items-center justify-center text-muted-foreground gap-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span className="text-[12px]">جاري التحميل...</span>
+        <div className="flex flex-col gap-3 border-t border-brand-line bg-brand-mist px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+          <div className="grid grid-cols-3 gap-2 sm:flex">
+            <Btn
+              size="sm"
+              variant="outline"
+              title="تحميل ملف Excel فارغ بالأعمدة الصحيحة"
+              icon={<FileDown className="h-4 w-4" aria-hidden="true" />}
+              onClick={downloadProductsTemplate}
+            >
+              النموذج
+            </Btn>
+            <Btn
+              size="sm"
+              variant="outline"
+              title="تصدير كل المنتجات إلى Excel"
+              icon={<Download className="h-4 w-4" aria-hidden="true" />}
+              onClick={() => exportProductsToExcel(products)}
+            >
+              تصدير
+            </Btn>
+            <Btn size="sm" variant="outline" icon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={openImport}>
+              استيراد
+            </Btn>
+          </div>
+
+          {/* Clear catalogue — asks once more, inline */}
+          {products.length > 0 &&
+            (!showClearConfirm ? (
+              <Btn
+                size="sm"
+                variant="ghost"
+                className="text-brand-red hover:bg-white hover:text-brand-red"
+                icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+                onClick={() => setShowClearConfirm(true)}
+              >
+                إفراغ الكتالوج
+              </Btn>
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border border-brand-red/30 bg-white px-3 py-2">
+                <span className="flex items-center gap-2 text-[13px] font-bold text-brand-black">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-brand-red" aria-hidden="true" />
+                  حذف كل المنتجات ({products.length})؟
+                </span>
+                <span className="flex gap-2 ms-auto">
+                  <Btn size="sm" variant="red" onClick={handleDeleteAllProducts}>
+                    تأكيد الحذف
+                  </Btn>
+                  <Btn size="sm" variant="ghost" onClick={() => setShowClearConfirm(false)}>
+                    إلغاء
+                  </Btn>
+                </span>
+              </div>
+            ))}
         </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="py-12 text-center bg-white dark:bg-card border border-dashed border-border rounded-lg p-6">
-          <Printer className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-          <h4 className="text-[13px] font-semibold text-foreground mb-1">
-            لا توجد منتجات مطابقة
-          </h4>
-          <p className="text-[11px] text-muted-foreground mb-3">
-            جرب تعديل البحث أو أضف منتجاً جديداً.
+      </Panel>
+
+      {/* ─── Count ─── */}
+      {!loading && products.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-brand-gray">
+          <p>
+            عرض <span className="font-extrabold text-brand-black">{filteredProducts.length}</span> من{" "}
+            <span className="font-extrabold text-brand-black">{products.length}</span> منتج
           </p>
-          <button
-            onClick={openCreateModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>إضافة منتج</span>
-          </button>
+          {hasFilters && (
+            <button type="button" onClick={resetFilters} className="text-sm font-bold text-brand-red underline-offset-4 hover:underline">
+              مسح الفلاتر
+            </button>
+          )}
         </div>
+      )}
+
+      {/* ─── Products ─── */}
+      {loading ? (
+        <LoadingBlock label="جارٍ تحميل المنتجات…" />
+      ) : filteredProducts.length === 0 ? (
+        products.length === 0 ? (
+          <EmptyState
+            icon={<CategoryIcon category="toner" className="h-7 w-7" />}
+            title="الكتالوج فارغ"
+            text="أضف أول منتج، أو استورد القائمة كاملة من ملف Excel."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Btn variant="red" icon={<Plus className="h-4 w-4" aria-hidden="true" />} onClick={openCreateModal}>
+                  إضافة منتج
+                </Btn>
+                <Btn variant="outline" icon={<Upload className="h-4 w-4" aria-hidden="true" />} onClick={openImport}>
+                  استيراد من Excel
+                </Btn>
+              </div>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={<Search className="h-6 w-6" aria-hidden="true" />}
+            title="لا توجد منتجات مطابقة"
+            text="جرّب كلمة بحث أخرى، أو امسح الفلاتر لعرض كل المنتجات."
+            action={
+              <Btn variant="outline" onClick={resetFilters}>
+                مسح الفلاتر
+              </Btn>
+            }
+          />
+        )
       ) : (
-        <div className="bg-white dark:bg-card border border-border rounded-lg overflow-hidden">
-          {/* Table container */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
+        <>
+          {/* Desktop: a ruled table */}
+          <div className="hidden overflow-x-auto border border-brand-line bg-white lg:block">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-muted/40 dark:bg-muted/20 border-b border-border text-right">
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground w-12">#</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground">المنتج</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden md:table-cell w-24">الماركة</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden sm:table-cell w-24">التصنيف</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden lg:table-cell w-24">الكود</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground hidden xl:table-cell">الطابعات المتوافقة</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground w-16 text-center">الحالة</th>
-                  <th className="py-2.5 px-3 font-semibold text-muted-foreground w-20 text-center">إجراءات</th>
+                <tr className="bg-brand-black text-white">
+                  <th className="w-14 px-4 py-3 text-start text-xs font-extrabold">#</th>
+                  <th className="px-4 py-3 text-start text-xs font-extrabold">المنتج</th>
+                  <th className="w-28 px-4 py-3 text-start text-xs font-extrabold">الماركة</th>
+                  <th className="w-48 px-4 py-3 text-start text-xs font-extrabold">التصنيف</th>
+                  <th className="hidden px-4 py-3 text-start text-xs font-extrabold xl:table-cell">الطابعات المتوافقة</th>
+                  <th className="w-28 px-4 py-3 text-center text-xs font-extrabold">الحالة</th>
+                  <th className="w-40 px-4 py-3 text-start text-xs font-extrabold">إجراءات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60">
+              <tbody>
                 {filteredProducts.map((product, idx) => {
-                  const catMeta = CATEGORIES_CONFIG[product.category] || CATEGORIES_CONFIG.toner;
-
+                  const printers = product.compatiblePrinters || [];
                   return (
                     <tr
                       key={product.id}
-                      className={`group hover:bg-muted/30 transition-colors ${
-                        !product.isActive ? "opacity-50" : ""
-                      }`}
+                      className={cn(
+                        "border-t border-brand-line align-middle transition-colors hover:bg-brand-mist/60",
+                        !product.isActive && "bg-brand-mist/40"
+                      )}
                     >
-                      {/* Row number */}
-                      <td className="py-2 px-3 text-muted-foreground tabular-nums text-[11px]">
-                        {idx + 1}
-                      </td>
+                      <td className="px-4 py-3 text-xs font-bold tabular-nums text-brand-gray">{pad(idx + 1)}</td>
 
-                      {/* Product: thumbnail + name */}
-                      <td className="py-2 px-3">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {/* Thumbnail */}
-                          <div className="w-9 h-9 rounded-md bg-muted/50 border border-border/60 overflow-hidden shrink-0 flex items-center justify-center">
-                            {product.imageUrl ? (
-                              <img
-                                src={product.imageUrl}
-                                alt={product.name}
-                                className="w-full h-full object-contain"
-                              />
-                            ) : (
-                              <span className="text-muted-foreground/50">
-                                {renderCategoryIcon(product.category, 14)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Name + SKU inline on mobile */}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[12px] font-semibold text-foreground leading-tight truncate max-w-[260px]">
-                              {product.name}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              {/* Show brand/category on mobile since columns hidden */}
-                              <span className="text-[10px] text-muted-foreground md:hidden">
-                                {product.brand}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground sm:hidden">
-                                · {CATEGORY_LABELS[product.category]}
-                              </span>
+                      <td className="px-4 py-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <ProductThumb
+                            product={product}
+                            className={cn("h-14 w-14 shrink-0", !product.isActive && "opacity-50")}
+                          />
+                          <div className="min-w-0">
+                            <p className="line-clamp-2 font-extrabold leading-6 text-brand-black">{product.name}</p>
+                            <div className="mt-1 flex items-center gap-2">
                               {product.sku && (
-                                <span className="text-[10px] font-mono text-muted-foreground lg:hidden">
-                                  · {product.sku}
+                                <span dir="ltr" className="text-xs font-bold text-brand-gray">
+                                  {product.sku}
                                 </span>
                               )}
+                              <ColorSwatches color={product.color} />
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Brand */}
-                      <td className="py-2 px-3 hidden md:table-cell">
-                        <span className="text-[11px] font-medium text-foreground">{product.brand}</span>
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-2 px-3 hidden sm:table-cell">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                          {renderCategoryIcon(product.category, 12)}
-                          <span>{CATEGORY_LABELS[product.category]}</span>
+                      <td className="px-4 py-3">
+                        <span dir="ltr" className="font-bold text-brand-black">
+                          {product.brand}
                         </span>
                       </td>
 
-                      {/* SKU */}
-                      <td className="py-2 px-3 hidden lg:table-cell">
-                        {product.sku ? (
-                          <span className="text-[11px] font-mono text-foreground bg-muted/50 px-1.5 py-0.5 rounded">
-                            {product.sku}
-                          </span>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-2 text-[13px] font-bold text-brand-black">
+                          <CategoryIcon category={product.category} className="h-5 w-5 shrink-0 text-brand-red" />
+                          {CATEGORY_LABELS[product.category]}
+                        </span>
+                      </td>
+
+                      <td className="hidden px-4 py-3 xl:table-cell">
+                        {product.category === "printer" ? (
+                          (() => {
+                            const n = products.filter(
+                              (c) => c.category !== "printer" && fitsPrinter(c, printerNamesOf(product))
+                            ).length;
+                            return (
+                              <span className={cn("px-2 py-1 text-[11px] font-bold", n ? "bg-brand-black text-white" : "bg-brand-mist text-brand-gray")}>
+                                {n ? `${n} مستلزمات متوافقة` : "لا مستلزمات مرتبطة"}
+                              </span>
+                            );
+                          })()
+                        ) : printers.length === 0 ? (
+                          <span className="text-brand-gray/60">—</span>
                         ) : (
-                          <span className="text-[11px] text-muted-foreground/50">—</span>
+                          <div className="flex max-w-[320px] flex-wrap gap-1.5">
+                            {printers.slice(0, 3).map((pr) => (
+                              <span
+                                key={pr}
+                                dir="ltr"
+                                title={pr}
+                                className="max-w-[140px] truncate bg-brand-mist px-2 py-1 text-[11px] font-bold text-brand-black"
+                              >
+                                {pr}
+                              </span>
+                            ))}
+                            {printers.length > 3 && (
+                              <span dir="ltr" className="bg-brand-black px-2 py-1 text-[11px] font-bold text-white">
+                                +{printers.length - 3}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
 
-                      {/* Compatible Printers */}
-                      <td className="py-2 px-3 hidden xl:table-cell">
-                        <div className="flex flex-wrap gap-1 max-w-[300px]">
-                          {(product.compatiblePrinters || []).slice(0, 3).map((pr, i) => (
-                            <span
-                              key={i}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground truncate max-w-[100px]"
-                              title={pr}
-                            >
-                              {pr}
-                            </span>
-                          ))}
-                          {(product.compatiblePrinters || []).length > 3 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold">
-                              +{product.compatiblePrinters.length - 3}
-                            </span>
-                          )}
-                          {(!product.compatiblePrinters || product.compatiblePrinters.length === 0) && (
-                            <span className="text-[11px] text-muted-foreground/50">—</span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Status toggle */}
-                      <td className="py-2 px-3 text-center">
+                      <td className="px-4 py-3 text-center">
                         <button
+                          type="button"
                           onClick={() => handleToggleActive(product.id, product.isActive)}
-                          className="cursor-pointer"
-                          title={product.isActive ? "إخفاء" : "تفعيل"}
+                          title={product.isActive ? "إخفاء من الموقع" : "إظهار في الموقع"}
+                          className="inline-flex"
                         >
-                          {product.isActive ? (
-                            <Eye className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <EyeOff className="w-3.5 h-3.5 text-muted-foreground/50" />
-                          )}
+                          <Badge tone={product.isActive ? "success" : "outline"}>
+                            {product.isActive ? "ظاهر" : "مخفي"}
+                          </Badge>
                         </button>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-2 px-3 text-center">
-                        <div className="flex items-center justify-center gap-0.5">
-                          <button
-                            onClick={() => openEditModal(product)}
-                            title="تعديل"
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProduct(product.id, product.name)}
-                            title="حذف"
-                            className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground hover:text-red-600 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <IconBtn label="تعديل" onClick={() => openEditModal(product)}>
+                            <Edit2 className="h-4 w-4" />
+                          </IconBtn>
+                          <IconBtn label="حذف" tone="danger" onClick={() => handleDeleteProduct(product.id, product.name)}>
+                            <Trash2 className="h-4 w-4" />
+                          </IconBtn>
+                          {product.slug && product.isActive && (
+                            <a
+                              href={`/compatibility/${product.slug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label="فتح صفحة المنتج"
+                              title="فتح صفحة المنتج"
+                              className="flex h-10 w-10 shrink-0 items-center justify-center border border-brand-line bg-white text-brand-black transition-colors hover:border-brand-black"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -876,275 +832,330 @@ export function AdminProductsManager() {
             </table>
           </div>
 
-          {/* Footer: count */}
-          <div className="px-3 py-2 bg-muted/20 dark:bg-muted/10 border-t border-border text-[11px] text-muted-foreground">
-            عرض {filteredProducts.length} من {products.length} منتج
+          {/* Phones and tablets: cards, the photo on top and the details under it */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:hidden">
+            {filteredProducts.map((product) => (
+              <article
+                key={product.id}
+                className={cn(
+                  "flex flex-col border bg-white",
+                  product.isActive ? "border-brand-line" : "border-dashed border-brand-gray/40"
+                )}
+              >
+                <div className="relative">
+                  <ProductThumb
+                    product={product}
+                    className={cn("aspect-square w-full", !product.isActive && "opacity-50")}
+                  />
+                  <span
+                    className={cn(
+                      "absolute start-0 top-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-extrabold leading-none",
+                      product.isActive ? "bg-brand-black text-white" : "bg-white text-brand-gray"
+                    )}
+                  >
+                    <span
+                      className={cn("h-1.5 w-1.5", product.isActive ? "bg-brand-red" : "bg-brand-gray/50")}
+                      aria-hidden="true"
+                    />
+                    {product.isActive ? "ظاهر" : "مخفي"}
+                  </span>
+                </div>
+
+                <div className="flex flex-1 flex-col p-3 sm:p-4">
+                  <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-brand-red">
+                    <CategoryIcon category={product.category} className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{CATEGORY_LABELS[product.category]}</span>
+                  </p>
+                  <h3 className="mt-1.5 line-clamp-2 text-sm font-extrabold leading-6 text-brand-black">{product.name}</h3>
+                  <div className="min-h-2 flex-1" aria-hidden="true" />
+                  <div className="flex items-center justify-between gap-2 border-t border-brand-line pt-2">
+                    <span dir="ltr" className="min-w-0 truncate text-xs font-bold text-brand-gray">
+                      {product.brand}
+                      {product.sku ? ` · ${product.sku}` : ""}
+                    </span>
+                    <ColorSwatches color={product.color} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 border-t border-brand-line">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleActive(product.id, product.isActive)}
+                    aria-label={product.isActive ? "إخفاء من الموقع" : "إظهار في الموقع"}
+                    className="flex h-11 items-center justify-center text-brand-black transition-colors hover:bg-brand-mist"
+                  >
+                    {product.isActive ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-brand-gray" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(product)}
+                    aria-label="تعديل"
+                    className="flex h-11 items-center justify-center bg-brand-black text-white transition-colors hover:bg-brand-red"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteProduct(product.id, product.name)}
+                    aria-label="حذف"
+                    className="flex h-11 items-center justify-center text-brand-red transition-colors hover:bg-brand-red hover:text-white"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
-        </div>
+        </>
       )}
 
-      {/* ─── FLOATING EDIT / CREATE MODAL ─── */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto"
-          dir="rtl"
-        >
-          <div className="relative w-full max-w-2xl bg-white dark:bg-card border border-border rounded-lg shadow-2xl overflow-hidden my-4">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-muted/20 dark:bg-muted/10">
-              <h3 className="text-[13px] font-semibold text-foreground">
-                {editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
-              </h3>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      {/* ─── CREATE / EDIT ─── */}
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        size="lg"
+        eyebrow={editingProduct ? "تعديل منتج" : "منتج جديد"}
+        title={editingProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
+        description="الحقول المعلّمة بـ * مطلوبة، وكل ما سواها اختياري."
+        footer={
+          <>
+            <Btn variant="outline" onClick={() => setIsModalOpen(false)}>
+              إلغاء
+            </Btn>
+            <Btn
+              type="submit"
+              form="admin-product-form"
+              variant="red"
+              loading={submitting}
+              disabled={uploadingImage}
+              icon={<Check className="h-4 w-4" aria-hidden="true" />}
+            >
+              {submitting ? "جارٍ الحفظ…" : editingProduct ? "حفظ التعديلات" : "إضافة المنتج"}
+            </Btn>
+          </>
+        }
+      >
+        <form id="admin-product-form" onSubmit={handleSaveProduct} className="space-y-6">
+          {modalError && <Notice tone="danger">{modalError}</Notice>}
+
+          <FormSection title="التعريف">
+            {/* Image */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden border border-brand-line bg-brand-mist">
+                {formImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={formImageUrl} alt="" className="h-full w-full object-contain p-2" />
+                ) : (
+                  <ImageIcon className="h-7 w-7 text-brand-black/25" aria-hidden="true" />
+                )}
+                {uploadingImage && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-brand-black/60">
+                    <Loader2 className="h-5 w-5 animate-spin text-white" aria-hidden="true" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-extrabold text-brand-black">صورة المنتج</p>
+                <p className="mt-0.5 text-xs leading-5 text-brand-gray">اختيارية — تُقص مربعة (1:1) لتتساوى كل البطاقات.</p>
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  <Btn
+                    size="sm"
+                    variant="black"
+                    icon={<ImageIcon className="h-4 w-4" aria-hidden="true" />}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {formImageUrl ? "تغيير الصورة" : "رفع صورة"}
+                  </Btn>
+                  {formImageUrl && (
+                    <Btn size="sm" variant="ghost" onClick={() => setFormImageUrl("")}>
+                      إزالة
+                    </Btn>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleSelectImageFile}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSaveProduct} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-              {modalError && (
-                <div className="p-2.5 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 text-[12px] font-medium rounded-md text-center">
-                  {modalError}
-                </div>
-              )}
+            <Field label="اسم المنتج" required htmlFor="product-name">
+              <input
+                id="product-name"
+                type="text"
+                required
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="مثال: خرطوشة حبر ليزر Royal Ink HP 85A"
+                className={inputCls}
+              />
+            </Field>
 
-              {/* Image Upload */}
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1.5">
-                  صورة المنتج <span className="text-muted-foreground font-normal">(اختيارية — 1:1)</span>
-                </label>
-                <div className="flex items-center gap-3 p-2.5 bg-muted/20 rounded-md border border-border">
-                  <div className="relative w-16 h-16 rounded-md bg-muted border border-border overflow-hidden shrink-0 flex items-center justify-center">
-                    {formImageUrl ? (
-                      <img src={formImageUrl} alt="Preview" className="w-full h-full object-contain" />
-                    ) : (
-                      <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
-                    )}
-                    {uploadingImage && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 flex flex-col items-start gap-1.5">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleSelectImageFile}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary text-white text-[11px] font-semibold hover:bg-primary/90 transition-colors cursor-pointer"
-                      >
-                        <ImageIcon className="w-3 h-3" />
-                        <span>{formImageUrl ? "تغيير" : "رفع صورة"}</span>
-                      </button>
-                      {formImageUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setFormImageUrl("")}
-                          className="px-2 py-1 rounded-md bg-muted text-[11px] font-medium text-muted-foreground hover:text-red-600 cursor-pointer"
-                        >
-                          إزالة
-                        </button>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      يتم قص الصورة تلقائياً بنسبة 1:1
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="الماركة" htmlFor="product-brand">
+                <Select
+                  id="product-brand"
+                  value={formBrand}
+                  onChange={(e) => setFormBrand(e.target.value as PrinterBrand)}
+                >
+                  {SUPPORTED_BRANDS.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="التصنيف" htmlFor="product-category">
+                <Select
+                  id="product-category"
+                  value={formCategory}
+                  onChange={(e) => handleCategoryChange(e.target.value as ProductCategory)}
+                >
+                  {CATEGORY_ORDER.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
 
-              {/* Product Name */}
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">
-                  اسم المنتج <span className="text-primary">*</span>
-                </label>
+            {formCategory === "printer" && (
+              <Notice tone="info">
+                طابعة كمنتج في الكتالوج: تظهر في تصنيف الطابعات، وتُقترح تلقائياً عند إضافة مستلزمات متوافقة معها.
+              </Notice>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="الكود (SKU)" htmlFor="product-sku">
                 <input
+                  id="product-sku"
                   type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="مثال: خرطوشة حبر ليزر Royal Ink HP 85A"
-                  className="w-full h-9 px-3 rounded-md bg-white dark:bg-background border border-border text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                  dir="ltr"
+                  value={formSku}
+                  onChange={(e) => setFormSku(e.target.value)}
+                  placeholder="CE285A, 85A"
+                  className={cn(inputCls, "text-right font-bold")}
                 />
-              </div>
+              </Field>
+              <Field label="اللون" htmlFor="product-color">
+                <Select
+                  id="product-color"
+                  value={formColor}
+                  onChange={(e) => setFormColor(e.target.value as ProductColor)}
+                >
+                  {COLOR_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+          </FormSection>
 
-              {/* Brand & Category */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[12px] font-semibold text-foreground mb-1">الماركة</label>
-                  <select
-                    value={formBrand}
-                    onChange={(e) => setFormBrand(e.target.value as PrinterBrand)}
-                    className="w-full h-9 px-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                  >
-                    {SUPPORTED_BRANDS.map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-foreground mb-1">التصنيف</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value as ProductCategory)}
-                    className="w-full h-9 px-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                  >
-                    {CATEGORY_ORDER.map((c) => (
-                      <option key={c} value={c}>
-                        {CATEGORY_LABELS[c]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+          <FormSection
+            title={formCategory === "printer" ? "طراز الطابعة" : "الطابعات المتوافقة"}
+            description={
+              formCategory === "printer"
+                ? "الاسم الأول هو طراز هذه الطابعة، وأضف أسماءه الأخرى إن وُجدت (مثل LBP6030 و LBP6030B). إن تركته فارغاً يُؤخذ الطراز من اسم المنتج."
+                : "ابحث واختر الطرازات، أو اكتب طرازاً جديداً واضغط «إضافة»."
+            }
+          >
+            <CompatiblePrintersInput
+              selectedPrinters={formCompatiblePrinters}
+              onChange={setFormCompatiblePrinters}
+              currentBrand={formBrand}
+              existingProducts={products}
+              isPrinterCategory={formCategory === "printer"}
+            />
+          </FormSection>
 
-              {/* Printer product info banner */}
-              {formCategory === "printer" && (
-                <div className="p-2.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
-                  <Printer className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="font-semibold">إضافة طابعة كمنتج في الكتالوج</p>
-                    <p className="text-muted-foreground text-[10px] mt-0.5">
-                      ستظهر في تصنيف الطابعات وتُقترح تلقائياً عند إضافة خراطيش متوافقة.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* SKU & Color */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[12px] font-semibold text-foreground mb-1">SKU / كود</label>
-                  <input
-                    type="text"
-                    value={formSku}
-                    onChange={(e) => setFormSku(e.target.value)}
-                    placeholder="مثل: CE285A, 85A"
-                    className="w-full h-9 px-3 rounded-md bg-white dark:bg-background border border-border text-[12px] font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-foreground mb-1">اللون</label>
-                  <select
-                    value={formColor}
-                    onChange={(e) => setFormColor(e.target.value as ProductColor)}
-                    className="w-full h-9 px-2.5 rounded-md bg-white dark:bg-background border border-border text-[12px] font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
-                  >
-                    <option value="black">أسود</option>
-                    <option value="cyan">سماوي</option>
-                    <option value="magenta">أرجواني</option>
-                    <option value="yellow">أصفر</option>
-                    <option value="multi">طقم ألوان</option>
-                    <option value="none">غير مخصص</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Compatible Printers */}
-              <CompatiblePrintersInput
-                selectedPrinters={formCompatiblePrinters}
-                onChange={setFormCompatiblePrinters}
-                currentBrand={formBrand}
-                existingProducts={products}
-                isPrinterCategory={formCategory === "printer"}
+          {formCategory === "printer" && (
+            <FormSection
+              title="المستلزمات المتوافقة"
+              description="اختر الأحبار والتونر والقطع التي تعمل مع هذه الطابعة."
+            >
+              <CompatibleSuppliesInput
+                products={products}
+                selectedIds={formSupplyIds}
+                onChange={setFormSupplyIds}
+                brand={formBrand}
+                modelName={printerNamesOf({ name: formName, compatiblePrinters: formCompatiblePrinters })[0] ?? ""}
               />
+            </FormSection>
+          )}
 
-              {/* Structured specs (by category) */}
-              <ProductSpecsEditor
-                category={formCategory}
-                specs={formSpecs}
-                legacyNotes={formNotes}
-                onChange={setFormSpecs}
-              />
+          <FormSection
+            title={`المواصفات — ${CATEGORY_LABELS[formCategory]}`}
+            description="تظهر في جدول «المواصفات التفصيلية» بصفحة المنتج. الرموز والقيم تُكتب كما هي ولا تُترجم، والحقول الفارغة لا تظهر."
+          >
+            <ProductSpecsEditor
+              category={formCategory}
+              specs={formSpecs}
+              legacyNotes={formNotes}
+              onChange={setFormSpecs}
+            />
+          </FormSection>
 
-              {/* Description: auto summary + optional note per language */}
-              <ProductNotesEditor
-                notes={formNotesI18n}
-                onChange={setFormNotesI18n}
-                draft={{
-                  id: editingProduct?.id ?? "draft",
-                  name: formName,
-                  brand: formBrand,
-                  category: formCategory,
-                  sku: formSku,
-                  color: formColor,
-                  compatiblePrinters: formCompatiblePrinters,
-                  isActive: formIsActive,
-                  specs: specsForCategory(formSpecs, formCategory),
-                }}
-              />
+          <FormSection
+            title="الوصف"
+            description="ملخص يُكتب تلقائياً من المواصفات باللغات الثلاث، وتحته ملاحظة اختيارية لكل لغة."
+          >
+            <ProductNotesEditor
+              notes={formNotesI18n}
+              onChange={setFormNotesI18n}
+              draft={{
+                id: editingProduct?.id ?? "draft",
+                name: formName,
+                brand: formBrand,
+                category: formCategory,
+                sku: formSku,
+                color: formColor,
+                compatiblePrinters: formCompatiblePrinters,
+                isActive: formIsActive,
+                specs: specsForCategory(formSpecs, formCategory),
+              }}
+            />
+          </FormSection>
 
-              {/* Page address */}
-              <div>
-                <label className="block text-[12px] font-semibold text-foreground mb-1">
-                  رابط صفحة المنتج <span className="text-muted-foreground font-normal">(اختياري — يُنشأ تلقائياً من الماركة والكود)</span>
-                </label>
-                <div dir="ltr" className="flex items-center rounded-md border border-border bg-muted/20 overflow-hidden">
-                  <span className="px-2.5 text-[11px] text-muted-foreground whitespace-nowrap">/compatibility/</span>
-                  <input
-                    type="text"
-                    value={formSlug}
-                    onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-"))}
-                    placeholder={`${formBrand}-${formSku || "code"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
-                    className="flex-1 h-9 px-2 bg-white dark:bg-background text-[12px] font-mono focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Active Toggle */}
-              <div className="flex items-center justify-between p-2.5 rounded-md bg-muted/20 border border-border">
-                <span className="text-[12px] font-medium text-foreground">ظاهر ومتاح</span>
+          <FormSection title="النشر">
+            <Field
+              label="رابط صفحة المنتج"
+              hint="اختياري — يُنشأ تلقائياً من الماركة والكود."
+              htmlFor="product-slug"
+            >
+              <div
+                dir="ltr"
+                className="flex border border-brand-line bg-white transition-colors focus-within:border-brand-black"
+              >
+                <span className="flex shrink-0 items-center border-e border-brand-line bg-brand-mist px-3 text-xs font-bold text-brand-gray">
+                  /compatibility/
+                </span>
                 <input
-                  type="checkbox"
-                  checked={formIsActive}
-                  onChange={(e) => setFormIsActive(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-primary rounded cursor-pointer"
+                  id="product-slug"
+                  type="text"
+                  value={formSlug}
+                  onChange={(e) => setFormSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, "-"))}
+                  placeholder={`${formBrand}-${formSku || "code"}`.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                  className="h-11 min-w-0 flex-1 bg-transparent px-3 text-sm font-bold text-brand-black outline-none placeholder:font-normal placeholder:text-brand-gray/60"
                 />
               </div>
+            </Field>
+            <Toggle
+              checked={formIsActive}
+              onChange={setFormIsActive}
+              label={formIsActive ? "ظاهر في الموقع" : "مخفي من الموقع"}
+              description="المنتج المخفي لا يظهر في دليل التوافق ولا في نتائج البحث."
+            />
+          </FormSection>
+        </form>
+      </Modal>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-2 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-white text-[12px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>جاري الحفظ...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5" />
-                      <span>{editingProduct ? "حفظ" : "إضافة"}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── IMAGE CROPPER MODAL ─── */}
+      {/* ─── IMAGE CROPPER ─── */}
       <ImageCropperModal
         isOpen={cropperOpen}
         imageSrc={selectedImageSrc}
@@ -1153,94 +1164,85 @@ export function AdminProductsManager() {
         aspectRatio={1} // 1:1 square
       />
 
-      {/* ─── EXCEL IMPORT MODAL ─── */}
-      {isImportModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          dir="rtl"
-        >
-          <div className="relative w-full max-w-md bg-white dark:bg-card border border-border rounded-lg shadow-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                <div>
-                  <h3 className="text-[13px] font-semibold text-foreground">استيراد من Excel</h3>
-                  <p className="text-[11px] text-muted-foreground">يدعم .xlsx و .xls</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsImportModalOpen(false)}
-                className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+      {/* ─── EXCEL IMPORT ─── */}
+      <Modal
+        open={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        size="sm"
+        eyebrow="Excel"
+        title="استيراد المنتجات"
+        description="ملف ‎.xlsx أو ‎.xls بنفس أعمدة النموذج."
+        footer={
+          importPreview ? (
+            <>
+              <Btn variant="outline" onClick={() => setImportPreview(null)}>
+                إلغاء
+              </Btn>
+              <Btn
+                variant="red"
+                loading={importing}
+                disabled={importPreview.total === 0}
+                icon={<Upload className="h-4 w-4" aria-hidden="true" />}
+                onClick={handleConfirmImport}
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                استيراد ({importPreview.total})
+              </Btn>
+            </>
+          ) : (
+            <Btn variant="outline" icon={<FileDown className="h-4 w-4" aria-hidden="true" />} onClick={downloadProductsTemplate}>
+              تحميل النموذج
+            </Btn>
+          )
+        }
+      >
+        <div className="space-y-4">
+          <input
+            type="file"
+            ref={importFileInputRef}
+            onChange={handleSelectExcelFile}
+            accept=".xlsx, .xls"
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => importFileInputRef.current?.click()}
+            className="flex w-full flex-col items-center gap-3 border border-dashed border-brand-black/30 bg-brand-mist px-6 py-8 text-center transition-colors hover:border-brand-red"
+          >
+            <span className="flex h-12 w-12 items-center justify-center bg-brand-black text-white">
+              <FileSpreadsheet className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="text-sm font-extrabold text-brand-black">اختر ملف Excel</span>
+            <span className="text-xs leading-5 text-brand-gray">استخدم النموذج لتتأكد من ترتيب الأعمدة.</span>
+          </button>
 
-            <input
-              type="file"
-              ref={importFileInputRef}
-              onChange={handleSelectExcelFile}
-              accept=".xlsx, .xls"
-              className="hidden"
-            />
+          {importing && !importPreview && (
+            <p className="flex items-center justify-center gap-2 text-sm font-bold text-brand-gray">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              جارٍ قراءة الملف…
+            </p>
+          )}
 
-            <div
-              onClick={() => importFileInputRef.current?.click()}
-              className="border-2 border-dashed border-border hover:border-primary/40 rounded-md p-6 text-center cursor-pointer transition-colors bg-muted/10 hover:bg-primary/5"
-            >
-              <Upload className="w-6 h-6 text-muted-foreground/50 mx-auto mb-1.5" />
-              <p className="text-[12px] font-medium text-foreground mb-0.5">
-                اضغط لاختيار ملف Excel
-              </p>
-              <span className="text-[10px] text-muted-foreground">
-                استخدم النموذج للتأكد من ترتيب الأعمدة
-              </span>
-            </div>
-
-            {importing && (
-              <div className="py-3 flex items-center justify-center gap-2 text-[12px] text-primary">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>جاري المعالجة...</span>
-              </div>
-            )}
-
-            {importPreview && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-2.5 rounded-md bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 text-[12px] font-medium">
-                  <span>تم قراءة {importPreview.total} منتج</span>
-                  <span className="text-[11px]">جاهزة</span>
-                </div>
-
-                {importPreview.errors.length > 0 && (
-                  <div className="p-2 bg-red-50 dark:bg-red-950/20 text-red-600 rounded-md text-[11px] space-y-0.5">
+          {importPreview && (
+            <>
+              <Notice tone="success">
+                تمت قراءة {importPreview.total} منتج، وهي جاهزة للاستيراد.
+              </Notice>
+              {importPreview.errors.length > 0 && (
+                <Notice tone="danger">
+                  <ul className="space-y-1">
                     {importPreview.errors.slice(0, 3).map((err, i) => (
-                      <p key={i}>⚠ {err}</p>
+                      <li key={i}>{err}</li>
                     ))}
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setImportPreview(null)}
-                    className="px-3 py-1.5 rounded-md text-[12px] font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    إلغاء
-                  </button>
-                  <button
-                    type="button"
-                    disabled={importing || importPreview.total === 0}
-                    onClick={handleConfirmImport}
-                    className="px-4 py-1.5 rounded-md bg-emerald-600 text-white text-[12px] font-semibold hover:bg-emerald-700 transition-colors cursor-pointer"
-                  >
-                    استيراد ({importPreview.total})
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+                  </ul>
+                  {importPreview.errors.length > 3 && (
+                    <p className="mt-1 text-xs">و{importPreview.errors.length - 3} ملاحظات أخرى.</p>
+                  )}
+                </Notice>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { DEFAULT_SLIDES } from "@/types/slide";
 import type { HeroSlide, SlideButton, SlideTextAlign } from "@/types/slide";
 import seedFile from "@/data/hero-slides.json";
 import { slidesCol, slideFromDoc, toObjectId, type SlideDoc } from "@/lib/db/collections";
+import { uploadKeyFromUrl } from "@/lib/uploadthing-server";
 
 /* ══════════════════════════════════════════════════════════════════════
    HERO SLIDES — MongoDB "slides" collection
@@ -39,7 +40,8 @@ function inputToFields(input: Partial<HeroSlide>): Partial<SlideDoc> {
   if (input.sort_order !== undefined) out.sortOrder = Math.round(Number(input.sort_order)) || 0;
   if (input.image_url !== undefined) {
     const url = text(input.image_url, 1000);
-    if (/^(https:\/\/|\/)/.test(url)) out.image = { url, key: text(input.image_key, 200) || undefined };
+    // The UploadThing key is read from the address itself
+    if (/^(https:\/\/|\/)/.test(url)) out.image = { url, key: uploadKeyFromUrl(url) };
   }
   if (input.overlay_opacity !== undefined) {
     out.overlayOpacity = Math.min(100, Math.max(0, Math.round(Number(input.overlay_opacity)) || 0));
@@ -111,17 +113,29 @@ export async function createSlide(slideData: Omit<HeroSlide, "id">): Promise<Her
   return slideFromDoc({ ...doc, _id: insertedId });
 }
 
-export async function updateSlide(id: string, updates: Partial<HeroSlide>): Promise<HeroSlide | null> {
+/** Updates a slide; when its image was replaced, also returns the old
+    image's key so that file can be deleted */
+export async function updateSlide(
+  id: string,
+  updates: Partial<HeroSlide>
+): Promise<{ slide: HeroSlide; replacedImageKey?: string } | null> {
   const _id = toObjectId(id);
   if (!_id) return null;
   const col = await slidesCol();
-  const updated = await col.findOneAndUpdate(
+  const before = await col.findOneAndUpdate(
     { _id },
     { $set: { ...inputToFields(updates), updatedAt: new Date() } },
-    { returnDocument: "after" }
+    { returnDocument: "before" }
   );
   revalidateTag(SLIDES_TAG);
-  return updated ? slideFromDoc(updated) : null;
+  if (!before) return null;
+  const updated = await col.findOne({ _id });
+  if (!updated) return null;
+  const oldKey = before.image?.key || undefined;
+  return {
+    slide: slideFromDoc(updated),
+    replacedImageKey: oldKey && oldKey !== updated.image?.key ? oldKey : undefined,
+  };
 }
 
 /** Deletes a slide; returns its image key so the file can be removed too */

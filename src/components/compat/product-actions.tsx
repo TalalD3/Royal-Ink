@@ -1,13 +1,16 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, ArrowUpLeft, MessageSquare, ShoppingBag } from "lucide-react";
-import { storeUrlFor } from "@/config/site";
+import { useSiteSettings } from "@/components/site-settings-provider";
+import { storeUrlFor } from "@/types/site-settings";
 import { cn } from "@/lib/utils";
 
 /* ══════════════════════════════════════════════════════════════════════
    PRODUCT ACTIONS — shop on the online store / contact us
-   While the store is not open (ONLINE_STORE_URL = null in
-   src/config/site.ts) the shop button is shown greyed out, marked
-   «قريباً», with a short line under it.
+   While the store is not open (no store address in the admin settings)
+   the shop button is shown greyed out, marked «قريباً», with a short
+   line under it.
    ══════════════════════════════════════════════════════════════════════ */
 
 export function contactHref(code?: string) {
@@ -27,7 +30,7 @@ export function ShopButton({
   /** The «المتجر الإلكتروني قريباً» line under the button */
   showNote?: boolean;
 }) {
-  const href = storeUrlFor(code);
+  const href = storeUrlFor(useSiteSettings().onlineStoreUrl, code);
   if (href) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={cn("ri-btn ri-btn-red", className)}>

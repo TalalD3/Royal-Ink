@@ -43,6 +43,19 @@ export function printerModelOf(p: Product): string {
   return p.compatiblePrinters?.[0] || stripArabicPrefix(p.name);
 }
 
+/** Every name a printer product answers to: its model first, then the
+    other names it lists (e.g. LBP6030 / LBP6030B) */
+export function printerNamesOf(p: Pick<Product, "name" | "compatiblePrinters">): string[] {
+  const model = p.compatiblePrinters?.[0] || stripArabicPrefix(p.name);
+  return Array.from(new Set([model, ...(p.compatiblePrinters ?? []).slice(1)].map((m) => m.trim()).filter(Boolean)));
+}
+
+/** True when a consumable lists one of these printer names */
+export function fitsPrinter(p: Pick<Product, "compatiblePrinters">, printerNames: string[]): boolean {
+  const keys = new Set(printerNames.map(normalize));
+  return (p.compatiblePrinters ?? []).some((m) => keys.has(normalize(m)));
+}
+
 /** Brand named at the start of a printer model, if any */
 export function brandOfModel(model: string): PrinterBrand | undefined {
   const m = model.toLowerCase();

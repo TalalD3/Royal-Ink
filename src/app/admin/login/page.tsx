@@ -1,19 +1,34 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { setAdminHint } from "@/lib/admin-hint";
-import { Lock, Mail, ArrowRight, ShieldCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Image as ImageIcon, Lock, Mail, MapPin, Package } from "lucide-react";
+import { Btn, Field, LoadingBlock, Notice, inputCls } from "@/components/admin/admin-ui";
+import { cn } from "@/lib/utils";
+
+/* ══════════════════════════════════════════════════════════════════════
+   ADMIN LOGIN — the logo's two blocks: a black block (what the dashboard
+   manages) beside a white form. Phones: a compact black band on top.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const MANAGES = [
+  { icon: Package, label: "كتالوج المنتجات والمواصفات" },
+  { icon: MapPin, label: "نقاط البيع على الخريطة" },
+  { icon: ImageIcon, label: "شرائح الواجهة الرئيسية" },
+];
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
 
-  // If already logged in, redirect directly to dashboard
+  // If already logged in, go straight to the dashboard
   useEffect(() => {
     async function checkAuth() {
       const res = await fetch("/api/admin/session").catch(() => null);
@@ -55,105 +70,117 @@ export default function AdminLoginPage() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <LoadingBlock label="جارٍ التحقق…" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-muted/30 via-background to-muted/20 px-4 py-12 select-none" dir="rtl">
-      {/* Background ambient lighting */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+    <div dir="rtl" className="grid min-h-screen grid-cols-1 bg-white lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      {/* ─── The black block ─── */}
+      <aside className="relative isolate flex flex-col overflow-hidden bg-brand-black text-white">
+        <div
+          aria-hidden="true"
+          className="ri-raster pointer-events-none absolute inset-0 -z-10 [mask-image:linear-gradient(to_left,#000,transparent_75%)]"
+        />
+        <div className="flex flex-1 flex-col px-6 py-6 sm:px-10 lg:px-14 lg:py-12">
+          <Link href="/" className="inline-flex w-fit" aria-label="الموقع">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo-footer-new.svg" alt="Royal Ink" className="h-9 w-auto lg:h-11" />
+          </Link>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Card Container */}
-        <div className="bg-card border border-border/60 rounded-3xl p-8 md:p-10 shadow-xl shadow-black/5 backdrop-blur-sm">
-          {/* Logo & Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-4 shadow-xs">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+          <div className="mt-6 lg:mt-auto">
+            <p className="ri-eyebrow ri-eyebrow-light mb-3">لوحة الإدارة</p>
+            <h1 className="text-2xl font-extrabold leading-snug sm:text-3xl lg:text-[2.5rem] lg:leading-tight">
               بوابة الإدارة
             </h1>
-            <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-              إدارة نقاط البيع وشبكة التوزيع الوطنية لـ Royal Ink
+            <p className="mt-3 hidden max-w-sm text-base leading-8 text-white/70 lg:block">
+              مساحة خاصة بإدارة محتوى موقع روايال إنك.
             </p>
+            <ul className="mt-8 hidden space-y-3 lg:block">
+              {MANAGES.map((m) => (
+                <li key={m.label} className="flex items-center gap-3 text-sm font-bold text-white/85">
+                  <span className="flex h-9 w-9 items-center justify-center bg-white/10">
+                    <m.icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  {m.label}
+                </li>
+              ))}
+            </ul>
           </div>
+        </div>
+        <div aria-hidden="true" className="ri-colorbar h-2" />
+      </aside>
 
-          {/* Error message */}
+      {/* ─── The form ─── */}
+      <main className="flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16">
+        <div className="w-full max-w-sm">
+          <p className="ri-eyebrow mb-3">تسجيل الدخول</p>
+          <h2 className="text-2xl font-extrabold text-brand-black">مرحباً بعودتك</h2>
+          <p className="mt-2 text-sm leading-6 text-brand-gray">أدخل بريدك الإلكتروني وكلمة المرور للمتابعة.</p>
+
           {errorMsg && (
-            <div className="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs font-semibold rounded-xl text-center">
-              {errorMsg}
+            <div className="mt-6">
+              <Notice tone="danger">{errorMsg}</Notice>
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                البريد الإلكتروني
-              </label>
+          <form onSubmit={handleLogin} className="mt-8 space-y-5">
+            <Field label="البريد الإلكتروني" htmlFor="admin-email">
               <div className="relative">
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gray" aria-hidden="true" />
                 <input
+                  id="admin-email"
                   type="email"
                   required
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@royalink.dz"
                   dir="ltr"
-                  className="w-full h-11 px-3.5 pl-10 rounded-xl bg-background border border-border/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left"
+                  className={cn(inputCls, "h-12 pl-10 text-left")}
                 />
-                <Mail className="w-4 h-4 text-muted-foreground absolute left-3 top-3.5 pointer-events-none" />
               </div>
-            </div>
+            </Field>
 
-            <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                كلمة المرور
-              </label>
+            <Field label="كلمة المرور" htmlFor="admin-password">
               <div className="relative">
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gray" aria-hidden="true" />
                 <input
-                  type="password"
+                  id="admin-password"
+                  type={showPassword ? "text" : "password"}
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="••••••••••"
                   dir="ltr"
-                  className="w-full h-11 px-3.5 pl-10 rounded-xl bg-background border border-border/70 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-left"
+                  className={cn(inputCls, "h-12 pl-10 pr-12 text-left")}
                 />
-                <Lock className="w-4 h-4 text-muted-foreground absolute left-3 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-brand-gray hover:text-brand-black"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
-            </div>
+            </Field>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 mt-2 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 transition-all shadow-md shadow-primary/20 hover:shadow-primary/30 active:scale-[0.99] disabled:opacity-60 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>جاري تسجيل الدخول...</span>
-                </>
-              ) : (
-                <>
-                  <span>دخول لوحة التحكم</span>
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                </>
-              )}
-            </button>
+            <Btn type="submit" variant="red" loading={loading} className="h-12 w-full text-[15px]">
+              {loading ? "جارٍ تسجيل الدخول…" : "دخول لوحة التحكم"}
+              {!loading && <ArrowLeft className="h-4 w-4" aria-hidden="true" />}
+            </Btn>
           </form>
 
-          {/* Subtle note */}
-          <div className="mt-8 pt-6 border-t border-border/40 text-center">
-            <span className="text-[11px] text-muted-foreground/70">
-              خاص بإدارة الموقع ومسؤولي التوزيع فقط
-            </span>
-          </div>
+          <p className="mt-8 border-t border-brand-line pt-5 text-xs leading-5 text-brand-gray">
+            خاص بإدارة الموقع فقط. نسيت كلمة المرور؟ يمكن تغييرها من جهاز الإدارة بالأمر{" "}
+            <span dir="ltr" className="font-bold text-brand-black">npm run admin:create</span>.
+          </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

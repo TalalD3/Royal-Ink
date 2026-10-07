@@ -20,6 +20,8 @@ import {
 import { useDistributors } from "@/hooks/use-distributors";
 import { SvgPin } from "@/components/ui/algeria-map";
 import { cn } from "@/lib/utils";
+import { useSiteSettings } from "@/components/site-settings-provider";
+import { telHref } from "@/types/site-settings";
 
 /* ══════════════════════════════════════════════════════════════════════
    STORE LOCATOR — /find-us
@@ -30,7 +32,6 @@ import { cn } from "@/lib/utils";
    ══════════════════════════════════════════════════════════════════════ */
 
 const HQ_CODE = 19;
-const HQ_PHONE = "+213666509941";
 
 /* Map frame: the northern view used on the home page, with room to pan
    across the whole country once zoomed in */
@@ -176,6 +177,8 @@ export function StoreLocator({
 } = {}) {
   const { activeWilayaCodes, getDistributorsByWilaya } =
     useDistributors(propDistributors);
+  // Head-office number for "no point of sale here yet" (admin settings)
+  const hqPhone = useSiteSettings().phones[0];
 
   const [selectedCode, setSelectedCode] = useState<number | null>(null);
   const [hovered, setHovered] = useState<WilayaData | null>(null);
@@ -566,7 +569,7 @@ export function StoreLocator({
                     خدمة التوصيل السريع متوفرة لجميع بلديات الولاية عبر شبكتنا أو
                     مباشرة من المقر الرئيسي.
                   </p>
-                  <a href={`tel:${HQ_PHONE}`} className="ri-btn ri-btn-red mt-6">
+                  <a href={telHref(hqPhone)} className="ri-btn ri-btn-red mt-6">
                     <Phone className="h-4 w-4" aria-hidden="true" />
                     <span>اطلب الآن هاتفياً أو استفسر</span>
                   </a>

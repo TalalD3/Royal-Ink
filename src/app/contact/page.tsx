@@ -1,182 +1,133 @@
-"use client";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowLeft, MapPin, Phone, Search, ShieldCheck } from "lucide-react";
+import { ContactHero } from "@/components/contact/contact-hero";
+import { ContactSection } from "@/components/contact/contact-form";
+import { ContactFaq } from "@/components/contact/contact-faq";
+import { StoreVisit } from "@/components/ui/store-visit";
+import { getSiteSettings } from "@/lib/site-settings";
+import { telHref } from "@/types/site-settings";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Globe, Camera, Phone, Mail, MapPin } from "lucide-react";
+/* ══════════════════════════════════════════════════════════════════════
+   CONTACT PAGE — /contact
 
-export default function ContactPage() {
-  const [isProfessional, setIsProfessional] = useState(false);
+   1. Header     — black block (title, call / write, facts) with the
+                   product photo on a red block, over the direct channels
+   2. Form       — for businesses, with tips for a faster answer, who we
+                   work with, and the official accounts
+   3. Shortcuts  — answers visitors can find themselves
+   4. Visit      — the El Eulma shop front, address and directions
+   5. FAQ        — the seven questions from the content document
+   ══════════════════════════════════════════════════════════════════════ */
+
+export const metadata: Metadata = {
+  title: "اتصل بنا — Royal Ink روايال إنك",
+  description:
+    "تواصلوا مع روايال إنك: هاتف، بريد إلكتروني، ونموذج تواصل للمؤسسات والمهنيين. متجرنا في العلمة، ولاية سطيف، والتوصيل إلى 58 ولاية.",
+};
+
+const SHORTCUTS = [
+  {
+    href: "/compatibility",
+    icon: Search,
+    title: "دليل التوافق",
+    text: "اعرفوا المستلزم المناسب لطابعتكم بالبحث بالطراز أو بكود الخرطوشة.",
+    cta: "ابحث عن طابعتك",
+  },
+  {
+    href: "/find-us",
+    icon: MapPin,
+    title: "نقاط البيع",
+    text: "أقرب نقطة بيع معتمدة إليكم، مع أرقامها وموقعها على الخريطة.",
+    cta: "اعثر على أقرب نقطة",
+  },
+  {
+    href: "/quality",
+    icon: ShieldCheck,
+    title: "الجودة",
+    text: "مراحل الفحص التي تمر بها كل عبوة قبل أن تصل إليكم، وشهاداتنا.",
+    cta: "اكتشف مراحل الجودة",
+  },
+];
+
+export default async function ContactPage() {
+  const { phones } = await getSiteSettings();
 
   return (
-    <div className="flex flex-col">
-      {/* Header */}
-      <section className="bg-muted py-20 text-center border-b">
+    <div className="flex flex-col bg-white">
+      {/* 1. HEADER */}
+      <ContactHero />
+
+      {/* 2. FORM */}
+      <section id="contact-form" className="scroll-mt-20 bg-white py-14 md:py-20">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">اتصل بنا</h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            نحن هنا للإجابة عن استفساراتكم وتقديم الدعم المناسب.
-          </p>
+          <Suspense fallback={<div className="min-h-[640px]" />}>
+            <ContactSection />
+          </Suspense>
         </div>
       </section>
 
-      <section className="py-24 container mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto">
-          
-          {/* Contact Information & Socials */}
-          <div className="space-y-12">
-            <div>
-              <h2 className="text-2xl font-bold mb-6">معلومات التواصل</h2>
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-lg shrink-0">
-                    <Phone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">اتصل بنا</h3>
-                    <p className="text-muted-foreground mt-1">+213 666 50 99 41 | +213 550 89 94 84</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-lg shrink-0">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">راسلنا</h3>
-                    <p className="text-muted-foreground mt-1">Royalinkdz@gmail.com</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-lg shrink-0">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg">زورونا</h3>
-                    <p className="text-muted-foreground mt-1">Dubai El Eulma City 19001 Setif Algeria</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-bold mb-6">تابعونا</h2>
-              <p className="text-muted-foreground mb-6">كونوا أول من يطّلع على عروضنا ومستجداتنا، عبر حساباتنا الرسمية على إنستغرام وفيسبوك.</p>
-              <div className="flex gap-4">
-                <Button variant="outline" className="gap-2 h-12 px-6">
-                  <Globe className="w-5 h-5 text-blue-600" />
-                  Royal Ink
-                </Button>
-                <Button variant="outline" className="gap-2 h-12 px-6">
-                  <Camera className="w-5 h-5 text-pink-600" />
-                  @royalink.dz
-                </Button>
-              </div>
-            </div>
+      {/* 3. SHORTCUTS */}
+      <section className="bg-brand-mist py-14 md:py-20">
+        <div className="container mx-auto px-4">
+          <div className="mb-8 max-w-2xl md:mb-10">
+            <p className="ri-eyebrow mb-4">قبل أن تراسلونا</p>
+            <h2 className="ri-h2">ربما تجدون الجواب هنا</h2>
           </div>
-
-          {/* Contact Form */}
-          <div className="bg-card p-8 md:p-10 rounded-2xl shadow-sm border">
-            <h2 className="text-2xl font-bold mb-8">أرسل لنا رسالة</h2>
-            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-              <div className="flex items-center space-x-2 space-x-reverse bg-muted/50 p-4 rounded-lg">
-                <Checkbox 
-                  id="professional" 
-                  checked={isProfessional}
-                  onCheckedChange={(c) => setIsProfessional(c as boolean)} 
+          <div className="grid grid-cols-1 gap-px border border-brand-line bg-brand-line md:grid-cols-3">
+            {SHORTCUTS.map((s) => (
+              <Link
+                key={s.href}
+                href={s.href}
+                className="group relative flex flex-col bg-white p-6 transition-colors hover:bg-white sm:p-8"
+              >
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 top-0 h-[3px] origin-right scale-x-0 bg-brand-red transition-transform duration-300 group-hover:scale-x-100"
                 />
-                <Label htmlFor="professional" className="text-base font-medium cursor-pointer">
-                  عميل مهني؟
-                </Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل أو اسم الشركة</Label>
-                <Input id="name" placeholder="أدخل الاسم..." className="h-12" />
-              </div>
-
-              {isProfessional && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
-                  <Label htmlFor="rc">رقم السجل التجاري <span className="text-destructive">*</span></Label>
-                  <Input id="rc" placeholder="أدخل رقم السجل التجاري..." className="h-12" required />
-                </div>
-              )}
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
-                  <Input id="email" type="email" placeholder="example@domain.com" className="h-12" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">رقم الهاتف</Label>
-                  <Input id="phone" type="tel" placeholder="+213..." className="h-12" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subject">الموضوع (اختياري)</Label>
-                <Input id="subject" placeholder="موضوع الرسالة..." className="h-12" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="message">الرسالة</Label>
-                <Textarea id="message" placeholder="اكتب رسالتك هنا..." className="min-h-[150px] resize-y" />
-              </div>
-
-              <Button type="submit" className="w-full h-12 text-lg">
-                إرسال الرسالة
-              </Button>
-            </form>
+                <span className="flex h-12 w-12 items-center justify-center bg-brand-black text-white transition-colors group-hover:bg-brand-red">
+                  <s.icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h3 className="mt-5 text-xl font-extrabold text-brand-black">{s.title}</h3>
+                <p className="mt-2 flex-1 text-[15px] leading-7 text-brand-gray">{s.text}</p>
+                <span className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-brand-red">
+                  {s.cta}
+                  <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-24 bg-muted/30">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl font-bold text-center mb-12">الأسئلة الشائعة</h2>
-          {/* @ts-expect-error - shadcn accordion types issue */}
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="text-lg text-right">هل تبيعون الطابعات إلى جانب الأحبار والمستلزمات؟</AccordionTrigger>
-              <AccordionContent className="text-base text-muted-foreground leading-relaxed">
-                نعم. روايال إنك مورّد متكامل يغطي الطابعات بمختلف أنواعها وماركاتها، إضافة إلى خراطيش الحبر، التونر، الأحبار، الاسطوانات، الأشرطة، وقطع الغيار الأصلية، ضمن سقف واحد.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="text-lg text-right">في أي القطاعات تتخصصون؟</AccordionTrigger>
-              <AccordionContent className="text-base text-muted-foreground leading-relaxed">
-                نقدّم حلولنا لكافة القطاعات الحيوية، بما في ذلك الشركات الكبرى، الإدارات الحكومية، المؤسسات التعليمية، المطاعم، والوكالات الإعلانية، إضافة إلى تلبية احتياجات الاستخدام المنزلي والشخصي.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger className="text-lg text-right">كم تستغرق مدة التوصيل عادة؟</AccordionTrigger>
-              <AccordionContent className="text-base text-muted-foreground leading-relaxed">
-                نسعى دائماً لمعالجة الطلبات في أسرع وقت ممكن. يستغرق التوصيل داخل العاصمة وضواحيها حوالي 24 ساعة، بينما قد يستغرق التوصيل إلى باقي الولايات من يومين إلى 4 أيام عمل، حسب المنطقة.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-4">
-              <AccordionTrigger className="text-lg text-right">هل تقدّمون دعماً بعد إتمام عملية الشراء؟</AccordionTrigger>
-              <AccordionContent className="text-base text-muted-foreground leading-relaxed">
-                بالتأكيد. التزامنا تجاهك لا ينتهي عند إتمام عملية الشراء، بل نقدّم دعماً فنياً متكاملاً لضمان عمل منتجاتنا بأفضل كفاءة، مع مساعدة فورية في حال واجهت أي استفسار أو مشكلة تقنية.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-5">
-              <AccordionTrigger className="text-lg text-right">هل يمكن لروايال إنك العمل مع الشركات الصغيرة؟</AccordionTrigger>
-              <AccordionContent className="text-base text-muted-foreground leading-relaxed">
-                نعم، بكل تأكيد. ندرك أهمية الشركات الصغيرة والمتوسطة وندعم نموها من خلال حزم مرنة وأأسعار تنافسية تتناسب مع ميزانياتها وتلبي احتياجاتها بدقة.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-6">
-              <AccordionTrigger className="text-lg text-right">كيف أبدأ التعامل مع روايال إنك؟</AccordionTrigger>
-              <AccordionContent className="text-base text-muted-foreground leading-relaxed">
-                الأمر في غاية البساطة! يمكنك تصفح منتجاتنا مباشرة عبر الموقع، أو التواصل معنا عبر صفحة "اتصل بنا"، أو عبر أرقام هواتفنا لطلب عرض سعر مخصص، وسيتولى فريقنا مساعدتك فوراً.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+      {/* 4. VISIT */}
+      <section id="visit" className="scroll-mt-20 bg-white py-14 md:py-20">
+        <div className="container mx-auto px-4">
+          <StoreVisit />
+        </div>
+      </section>
+
+      {/* 5. FAQ */}
+      <section className="bg-brand-mist py-14 md:py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-16">
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <p className="ri-eyebrow mb-4">الأسئلة الشائعة</p>
+              <h2 className="ri-h2">أسئلة تصلنا كثيراً</h2>
+              <p className="ri-lead mt-3">لم تجدوا سؤالكم؟ فريقنا يجيبكم مباشرة.</p>
+              <a
+                href={telHref(phones[0])}
+                className="ri-btn ri-btn-black mt-6"
+              >
+                <Phone className="h-4 w-4" aria-hidden="true" />
+                <span dir="ltr" className="tabular-nums">
+                  {phones[0]}
+                </span>
+              </a>
+            </div>
+            <ContactFaq />
+          </div>
         </div>
       </section>
     </div>

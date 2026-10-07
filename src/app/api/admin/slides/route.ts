@@ -8,6 +8,7 @@ import {
   deleteSlide,
   resetSlidesToDefault,
 } from "@/lib/slides-store";
+import { deleteUploadedFiles } from "@/lib/uploadthing-server";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,8 @@ export async function POST(req: NextRequest) {
   try {
     const raw = await req.json();
     if (raw?.action === "reset") {
-      const { slides } = await resetSlidesToDefault();
+      const { slides, imageKeys } = await resetSlidesToDefault();
+      await deleteUploadedFiles(imageKeys);
       return NextResponse.json({ data: slides, message: "Reset to defaults" });
     }
     const parsed = slideInputSchema.safeParse(raw);
@@ -41,7 +43,6 @@ export async function POST(req: NextRequest) {
     const newSlide = await createSlide({
       sort_order: Number(body.sort_order) || 0,
       image_url: body.image_url ?? "",
-      image_key: body.image_key ?? undefined,
       overlay_opacity: body.overlay_opacity ?? 50,
       title: body.title ?? "",
       subtitle: body.subtitle ?? "",
@@ -64,7 +65,8 @@ export async function PUT(req: NextRequest) {
     const { id, ...updates } = parsed.data;
     const updated = await updateSlide(id, updates as Parameters<typeof updateSlide>[1]);
     if (!updated) return NextResponse.json({ error: "Slide not found" }, { status: 404 });
-    return NextResponse.json({ data: updated });
+    await deleteUploadedFiles([updated.replacedImageKey]); // the replaced image
+    return NextResponse.json({ data: updated.slide });
   } catch (err) {
     return failed(err, 400);
   }
@@ -77,8 +79,9 @@ export async function DELETE(req: NextRequest) {
   if (!parsedId.success) return NextResponse.json({ error: "Missing slide ID" }, { status: 400 });
   const id = parsedId.data;
   try {
-    const { deleted } = await deleteSlide(id);
+    const { deleted, imageKey } = await deleteSlide(id);
     if (!deleted) return NextResponse.json({ error: "Slide not found" }, { status: 404 });
+    await deleteUploadedFiles([imageKey]);
     return NextResponse.json({ success: true });
   } catch (err) {
     return failed(err);

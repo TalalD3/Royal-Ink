@@ -7,15 +7,9 @@ import {
   getPrintersByBrand,
   type PrinterSuggestion,
 } from "@/data/printers-directory";
-import {
-  Printer,
-  Plus,
-  X,
-  Search,
-  Check,
-  ChevronDown,
-  Sparkles,
-} from "lucide-react";
+import { Printer, Plus, X, Search } from "lucide-react";
+import { inputCls } from "@/components/admin/admin-ui";
+import { cn } from "@/lib/utils";
 
 interface CompatiblePrintersInputProps {
   selectedPrinters: string[];
@@ -124,57 +118,34 @@ export function CompatiblePrintersInput({
   };
 
   return (
-    <div className="space-y-3" ref={containerRef}>
-      {/* ─── LABEL & STATS ─── */}
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-          <Printer className="w-3.5 h-3.5 text-primary" />
-          <span>
-            {isPrinterCategory
-              ? "طرازات وموديلات تابعة لهذه الطابعة (اختياري)"
-              : "الطابعات المتوافقة مع هذا المنتج"}
-          </span>
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
-            {selectedPrinters.length} محددة
-          </span>
-        </label>
-
-        {selectedPrinters.length > 0 && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-[11px] font-bold text-muted-foreground hover:text-rose-500 transition-colors"
-          >
-            إزالة الكل
-          </button>
-        )}
-      </div>
-
-      {/* ─── AUTO-SUGGEST INPUT WITH DROPDOWN ─── */}
+    <div className="space-y-4" ref={containerRef}>
+      {/* ─── Search + add ─── */}
       <div className="relative">
-        <div className="relative flex items-center">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => {
-              setInputValue(e.target.value);
-              setIsOpen(true);
-              setActiveIndex(0);
-            }}
-            onFocus={() => setIsOpen(true)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              isPrinterCategory
-                ? `اكتب أو اختر طرازات مطابقة (مثال: ${currentBrand} P1102w)...`
-                : `ابحث أو اختر من طابعات ${currentBrand} المسجلة في المتجر والدليل...`
-            }
-            className="w-full h-11 pr-10 pl-24 rounded-xl bg-background border border-border/80 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-2xs"
-          />
-          <Search className="w-4 h-4 text-muted-foreground absolute right-3 pointer-events-none" />
-
-          {/* Add custom button */}
-          <div className="absolute left-1.5 flex items-center gap-1">
+        <div className="flex">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-gray"
+              aria-hidden="true"
+            />
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                setIsOpen(true);
+                setActiveIndex(0);
+              }}
+              onFocus={() => setIsOpen(true)}
+              onKeyDown={handleKeyDown}
+              aria-label={isPrinterCategory ? "طرازات تابعة لهذه الطابعة" : "الطابعات المتوافقة"}
+              placeholder={
+                isPrinterCategory
+                  ? `مثال: ${currentBrand} P1102w`
+                  : `ابحث في طابعات ${currentBrand} والدليل…`
+              }
+              className={cn(inputCls, "ps-10 pe-9")}
+            />
             {inputValue && (
               <button
                 type="button"
@@ -182,104 +153,86 @@ export function CompatiblePrintersInput({
                   setInputValue("");
                   setIsOpen(false);
                 }}
-                className="p-1 text-muted-foreground hover:text-foreground text-xs"
+                aria-label="مسح"
+                className="absolute end-1 top-1/2 flex h-9 w-8 -translate-y-1/2 items-center justify-center text-brand-gray hover:text-brand-black"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => addPrinter(inputValue)}
-              disabled={!inputValue.trim()}
-              className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 disabled:opacity-40 transition-all shadow-xs"
-            >
-              + إضافة
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={() => addPrinter(inputValue)}
+            disabled={!inputValue.trim()}
+            className="inline-flex h-11 shrink-0 items-center gap-1.5 bg-brand-black px-4 text-sm font-bold text-white transition-colors hover:bg-brand-red disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            إضافة
+          </button>
         </div>
 
-        {/* ─── FLOATING DROPDOWN SUGGESTIONS ─── */}
+        {/* ─── Suggestions ─── */}
         {isOpen && (
-          <div className="absolute top-full mt-1.5 right-0 w-full max-h-64 overflow-y-auto bg-card border border-border/80 rounded-2xl shadow-2xl z-50 py-1.5 divide-y divide-border/40 animate-in fade-in zoom-in-95 duration-150">
-            {/* Header / Brand info */}
-            <div className="px-3.5 py-1.5 text-[11px] font-bold text-muted-foreground flex items-center justify-between bg-muted/20">
-              <span>طابعات مسجلة في النظام:</span>
-              <span className="text-primary font-black uppercase text-[10px]">
-                {currentBrand} أولاً
+          <div className="absolute inset-x-0 top-full z-50 mt-1 max-h-72 overflow-y-auto border border-brand-black bg-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)]">
+            <div className="flex items-center justify-between gap-3 border-b border-brand-line bg-brand-mist px-4 py-2 text-[11px] font-bold text-brand-gray">
+              <span>طابعات مسجلة في الدليل</span>
+              <span dir="ltr" className="font-extrabold text-brand-red">
+                {currentBrand}
               </span>
             </div>
 
-            {/* Suggestions list */}
             {suggestions.length > 0 ? (
               suggestions.map((item, index) => {
-                const isSelected = activeIndex === index;
+                const isActive = activeIndex === index;
                 return (
                   <button
                     key={item.name}
                     type="button"
                     onClick={() => addPrinter(item.name)}
                     onMouseEnter={() => setActiveIndex(index)}
-                    className={`w-full text-right px-4 py-2.5 text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                      isSelected
-                        ? "bg-primary/15 text-primary font-bold"
-                        : "hover:bg-muted/60 text-foreground"
-                    }`}
+                    className={cn(
+                      "flex w-full items-center gap-3 border-b border-brand-line px-4 py-2.5 text-start transition-colors last:border-b-0",
+                      isActive ? "bg-brand-black text-white" : "bg-white text-brand-black"
+                    )}
                   >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Printer
-                        className={`w-3.5 h-3.5 shrink-0 ${
-                          item.isFromSelectedBrand
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="truncate font-semibold">{item.name}</span>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          {item.isPrinterProduct ? (
-                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-500/25">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              طابعة مسجلة كمنتج في المتجر
-                              {item.inDatabaseCount > 0 && ` • (${item.inDatabaseCount} مستلزم)`}
-                            </span>
-                          ) : item.inDatabaseCount > 0 ? (
-                            <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                              في قاعدة البيانات ({item.inDatabaseCount} منتج متوافق)
-                            </span>
-                          ) : (
-                            <span className="text-[10px] text-muted-foreground font-medium">
-                              طراز معتمد من دليل {item.brand}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0 mr-2">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          item.isFromSelectedBrand
-                            ? "bg-primary/20 text-primary border border-primary/30"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {item.brand}
+                    <Printer
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        isActive ? "text-white" : item.isFromSelectedBrand ? "text-brand-red" : "text-brand-gray"
+                      )}
+                      aria-hidden="true"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span dir="ltr" className="block truncate text-start text-sm font-bold">
+                        {item.name}
                       </span>
-                      <div className="w-6 h-6 rounded-lg bg-foreground/5 group-hover:bg-primary/20 flex items-center justify-center">
-                        <Plus className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
-                      </div>
-                    </div>
+                      <span className={cn("mt-0.5 block text-[11px]", isActive ? "text-white/65" : "text-brand-gray")}>
+                        {item.isPrinterProduct
+                          ? `طابعة مسجلة كمنتج${item.inDatabaseCount > 0 ? ` · ${item.inDatabaseCount} مستلزم` : ""}`
+                          : item.inDatabaseCount > 0
+                          ? `${item.inDatabaseCount} منتج متوافق في الكتالوج`
+                          : `طراز من دليل ${item.brand}`}
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 px-2 py-1 text-[10px] font-extrabold",
+                        isActive
+                          ? "bg-brand-red text-white"
+                          : item.isFromSelectedBrand
+                          ? "bg-brand-black text-white"
+                          : "bg-brand-mist text-brand-gray"
+                      )}
+                    >
+                      {item.brand}
+                    </span>
                   </button>
                 );
               })
             ) : (
-              <div className="px-4 py-3 text-center text-xs text-muted-foreground">
-                لم نجد طابعة مسجلة بهذا الاسم بالضبط.
-              </div>
+              <p className="px-4 py-4 text-center text-xs text-brand-gray">لم نجد طابعة مسجلة بهذا الاسم بالضبط.</p>
             )}
 
-            {/* Option to add custom new printer name if typed */}
             {inputValue.trim() &&
               !suggestions.some(
                 (s) => s.name.toLowerCase() === inputValue.toLowerCase().trim()
@@ -287,14 +240,11 @@ export function CompatiblePrintersInput({
                 <button
                   type="button"
                   onClick={() => addPrinter(inputValue)}
-                  className="w-full text-right px-4 py-2.5 text-xs font-bold text-primary hover:bg-primary/10 flex items-center justify-between border-t border-border/60"
+                  className="flex w-full items-center gap-2 border-t border-brand-line px-4 py-3 text-start text-sm font-bold text-brand-red hover:bg-brand-mist"
                 >
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    إضافة &quot;{inputValue.trim()}&quot; كطراز جديد في النظام
-                  </span>
-                  <span className="text-[10px] bg-primary/20 px-2 py-0.5 rounded-full font-bold">
-                    + طراز جديد
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 truncate">
+                    إضافة «<span dir="ltr">{inputValue.trim()}</span>» كطراز جديد
                   </span>
                 </button>
               )}
@@ -302,60 +252,68 @@ export function CompatiblePrintersInput({
         )}
       </div>
 
-      {/* ─── QUICK 1-CLICK POPULAR CHIPS (FOR SELECTED BRAND) ─── */}
-      {popularBrandChips.length > 0 && (
-        <div className="space-y-1.5 pt-0.5">
-          <div className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground">
-            <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>طابعات شائعة لـ {currentBrand} (اضغط للإضافة فوراً):</span>
-          </div>
-
-          <div className="flex flex-wrap gap-1.5">
+      {/* ─── Popular models of the brand, one click to add (not once a
+          printer has its model — another model is not one of its names) ─── */}
+      {popularBrandChips.length > 0 && !(isPrinterCategory && selectedPrinters.length > 0) && (
+        <div>
+          <p className="mb-2 text-xs font-bold text-brand-gray">
+            طابعات شائعة من <span dir="ltr">{currentBrand}</span> — اضغط للإضافة:
+          </p>
+          <div className="flex flex-wrap gap-2">
             {popularBrandChips.map((chip) => (
               <button
                 key={chip}
                 type="button"
                 onClick={() => addPrinter(chip)}
-                className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-card border border-border/70 text-foreground/80 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 border border-brand-line bg-white px-2.5 py-1.5 text-xs font-bold text-brand-black transition-colors hover:border-brand-red hover:text-brand-red"
               >
-                <Plus className="w-3 h-3 text-primary shrink-0" />
-                <span>{chip}</span>
+                <Plus className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <span dir="ltr">{chip}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* ─── SELECTED TAGS PREVIEW ─── */}
-      <div className="min-h-14 p-3 bg-muted/20 rounded-2xl border border-border/60 max-h-40 overflow-y-auto space-y-1">
-        {selectedPrinters.length === 0 ? (
-          <div className="flex items-center justify-center py-2 text-center text-xs text-muted-foreground/70 gap-1.5">
-            <Printer className="w-4 h-4 opacity-40" />
-            <span>
-              لم تختر طابعات بعد. اختر من القائمة المقترحة أو اكتب واضغط إضافة.
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedPrinters.map((pr) => (
-              <span
-                key={pr}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-xl bg-card text-foreground border border-primary/30 shadow-2xs group transition-all"
-              >
-                <Printer className="w-3 h-3 text-primary shrink-0" />
-                <span className="font-bold text-xs">{pr}</span>
-                <button
-                  type="button"
-                  onClick={() => removePrinter(pr)}
-                  className="w-4 h-4 rounded-full flex items-center justify-center text-muted-foreground hover:text-white hover:bg-rose-500 transition-colors cursor-pointer text-[11px] mr-1"
-                  title={`إزالة ${pr}`}
+      {/* ─── Selected ─── */}
+      <div className="border border-brand-line">
+        <div className="flex items-center justify-between gap-3 border-b border-brand-line bg-brand-mist px-4 py-2.5">
+          <span className="text-[13px] font-extrabold text-brand-black">
+            المحددة <span className="ms-1 bg-brand-black px-1.5 py-0.5 text-[11px] text-white tabular-nums">{selectedPrinters.length}</span>
+          </span>
+          {selectedPrinters.length > 0 && (
+            <button type="button" onClick={clearAll} className="text-xs font-bold text-brand-red hover:underline">
+              إزالة الكل
+            </button>
+          )}
+        </div>
+        <div className="max-h-44 overflow-y-auto p-3">
+          {selectedPrinters.length === 0 ? (
+            <p className="py-2 text-center text-xs leading-5 text-brand-gray">
+              لم تختر طابعات بعد. اختر من الاقتراحات أو اكتب الطراز واضغط «إضافة».
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {selectedPrinters.map((pr) => (
+                <span
+                  key={pr}
+                  className="inline-flex items-center gap-2 bg-brand-black py-1 pe-1 ps-2.5 text-xs font-bold text-white"
                 >
-                  ✕
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
+                  <span dir="ltr">{pr}</span>
+                  <button
+                    type="button"
+                    onClick={() => removePrinter(pr)}
+                    aria-label={`إزالة ${pr}`}
+                    title={`إزالة ${pr}`}
+                    className="flex h-5 w-5 items-center justify-center text-white/70 transition-colors hover:bg-brand-red hover:text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
